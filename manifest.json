@@ -1,15 +1,16 @@
 {
   "name": "DobiMoney Tracker",
   "short_name": "DobiMoney",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2489/2489756.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
