@@ -3,30 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DobiMoney Tracker</title>
-    <link rel="manifest" href="manifest.json">
+    <title>DobiMoney Tracker V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/build/index.min.js"></script>
     <style>
         .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
-        #loginScreen { z-index: 100; }
+        .paid-bg { background-color: #f0fdf4; border-left-color: #22c55e !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans">
 
-    <div id="loginScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-6">
+    <div id="loginScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-6 z-[100]">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
             <h1 class="text-2xl font-bold mb-6 text-slate-800">DobiMoney Login</h1>
-            <input type="password" id="passInput" placeholder="Jelszó" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button onclick="checkPass()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">Belépés</button>
+            <input type="password" id="passInput" placeholder="Jelszó" class="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="checkPass()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Belépés</button>
         </div>
     </div>
 
     <div id="app" class="hidden pb-20">
         <header class="p-6 flex justify-between items-center bg-white shadow-sm sticky top-0 z-10">
-            <h2 class="text-xl font-bold text-slate-800">Freelance Tracker</h2>
-            <button onclick="toggleModal()" class="bg-green-500 text-white w-12 h-12 rounded-full text-2xl shadow-lg flex items-center justify-center">+</button>
+            <h2 class="text-xl font-bold text-slate-800">DobiMoney Tracker</h2>
+            <button onclick="openModal()" class="bg-green-500 text-white w-12 h-12 rounded-full text-2xl shadow-lg flex items-center justify-center hover:scale-105 transition">+</button>
         </header>
 
         <main class="p-4 max-w-4xl mx-auto">
@@ -34,27 +32,29 @@
                 <canvas id="invoiceChart"></canvas>
             </div>
 
-            <div id="invoiceList" class="space-y-3">
-                </div>
+            <div id="invoiceList" class="space-y-3"></div>
         </main>
     </div>
 
     <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white p-6 rounded-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-4">Új számla hozzáadása</h3>
+        <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+            <h3 id="modalTitle" class="text-lg font-bold mb-4">Új számla</h3>
+            <input type="hidden" id="editId">
             <div class="space-y-4">
-                <input type="text" id="company" placeholder="Cég neve" class="w-full p-2 border rounded">
-                <select id="currency" class="w-full p-2 border rounded">
-                    <option value="HUF">HUF</option>
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
-                </select>
-                <input type="number" id="amount" placeholder="Összeg HUF-ban" class="w-full p-2 border rounded">
-                <input type="date" id="date" class="w-full p-2 border rounded">
+                <input type="text" id="company" placeholder="Cég neve" class="w-full p-3 border rounded-lg">
                 <div class="flex gap-2">
-                    <button onclick="toggleModal()" class="flex-1 py-2 bg-slate-200 rounded">Mégse</button>
-                    <button onclick="saveInvoice()" class="flex-1 py-2 bg-blue-600 text-white rounded">Mentés</button>
+                    <select id="currency" class="p-3 border rounded-lg bg-white">
+                        <option value="HUF">HUF</option>
+                        <option value="EUR">EUR</option>
+                    </select>
+                    <input type="number" id="amount" placeholder="Összeg HUF-ban" class="flex-1 p-3 border rounded-lg">
                 </div>
+                <input type="date" id="date" class="w-full p-3 border rounded-lg">
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeModal()" class="flex-1 py-3 bg-slate-100 rounded-lg font-medium">Mégse</button>
+                    <button onclick="saveInvoice()" class="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium">Mentés</button>
+                </div>
+                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-500 text-sm hidden">Számla törlése</button>
             </div>
         </div>
     </div>
@@ -63,17 +63,16 @@
         let myChart;
         const targetMonthly = 2000000;
         let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+        let editingId = null;
 
-        // Auth Logic
+        // AUTH
         function checkPass() {
-            const pass = document.getElementById('passInput').value;
-            if (pass === 'dobimoney') {
+            if (document.getElementById('passInput').value === 'dobimoney') {
                 localStorage.setItem('auth', 'true');
                 showApp();
-            } else {
-                alert('Hibás jelszó!');
-            }
+            } else { alert('Hibás jelszó!'); }
         }
+        if (localStorage.getItem('auth') === 'true') showApp();
 
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
@@ -82,101 +81,163 @@
             renderList();
         }
 
-        if (localStorage.getItem('auth') === 'true') showApp();
-
-        function toggleModal() {
-            document.getElementById('modal').classList.toggle('hidden');
-            document.getElementById('date').valueAsDate = new Date();
+        // MODAL LOGIC
+        function openModal(id = null) {
+            editingId = id;
+            const modal = document.getElementById('modal');
+            const deleteBtn = document.getElementById('deleteBtn');
+            modal.classList.remove('hidden');
+            
+            if (id) {
+                const inv = invoices.find(i => i.id === id);
+                document.getElementById('modalTitle').innerText = "Számla szerkesztése";
+                document.getElementById('company').value = inv.company;
+                document.getElementById('amount').value = inv.amount;
+                document.getElementById('currency').value = inv.currency;
+                document.getElementById('date').value = inv.date;
+                deleteBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('modalTitle').innerText = "Új számla";
+                document.getElementById('company').value = "";
+                document.getElementById('amount').value = "";
+                document.getElementById('date').valueAsDate = new Date();
+                deleteBtn.classList.add('hidden');
+            }
         }
 
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        // CRUD OPERATIONS
         function saveInvoice() {
-            const newInv = {
-                id: Date.now(),
+            const data = {
                 company: document.getElementById('company').value,
-                currency: document.getElementById('currency').value,
                 amount: parseFloat(document.getElementById('amount').value),
+                currency: document.getElementById('currency').value,
                 date: document.getElementById('date').value
             };
-            
-            if (!newInv.amount || !newInv.date) return alert('Tölts ki mindent!');
-            
-            invoices.push(newInv);
-            localStorage.setItem('invoices', JSON.stringify(invoices));
-            toggleModal();
-            updateUI();
+
+            if (!data.amount || !data.date) return alert('Hiányzó adatok!');
+
+            if (editingId) {
+                const index = invoices.findIndex(i => i.id === editingId);
+                invoices[index] = { ...invoices[index], ...data };
+            } else {
+                invoices.push({ id: Date.now(), ...data, paid: false });
+            }
+
+            persistAndRefresh();
+            closeModal();
         }
 
-        function updateUI() {
+        function togglePaid(id) {
+            const index = invoices.findIndex(i => i.id === id);
+            invoices[index].paid = !invoices[index].paid;
+            persistAndRefresh();
+        }
+
+        function deleteInvoice() {
+            if (confirm('Biztosan törlöd?')) {
+                invoices = invoices.filter(i => i.id !== editingId);
+                persistAndRefresh();
+                closeModal();
+            }
+        }
+
+        function persistAndRefresh() {
+            localStorage.setItem('invoices', JSON.stringify(invoices));
             renderList();
             updateChart();
         }
 
+        // UI RENDER
         function renderList() {
             const list = document.getElementById('invoiceList');
             list.innerHTML = invoices.sort((a,b) => new Date(b.date) - new Date(a.date))
                 .map(inv => `
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500 flex justify-between">
-                        <div>
-                            <div class="font-bold">${inv.company}</div>
-                            <div class="text-xs text-slate-500">${inv.date}</div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-400 flex items-center justify-between ${inv.paid ? 'paid-bg' : ''}">
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" ${inv.paid ? 'checked' : ''} 
+                                   onchange="togglePaid(${inv.id})" 
+                                   class="w-6 h-6 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer">
+                            <div>
+                                <div class="font-bold text-slate-800">${inv.company}</div>
+                                <div class="text-xs text-slate-500">${inv.date}</div>
+                            </div>
                         </div>
-                        <div class="font-mono font-semibold">${inv.amount.toLocaleString()} Ft</div>
+                        <div class="text-right">
+                            <div class="font-mono font-bold text-slate-700">${inv.amount.toLocaleString()} Ft</div>
+                            <button onclick="openModal(${inv.id})" class="text-blue-500 text-xs font-medium hover:underline mt-1">Szerkesztés</button>
+                        </div>
                     </div>
                 `).join('');
         }
 
+        // CHART LOGIC
         function initChart() {
             const ctx = document.getElementById('invoiceChart').getContext('2d');
-            
-            // Cél vonal generálása (Jan-Dec kumulatív)
             const targetData = Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly);
             
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec'],
-                    datasets: [{
-                        label: 'Cél (havi 2M)',
-                        data: targetData,
-                        borderColor: 'rgba(0,0,0,0.1)',
-                        borderDash: [5, 5],
-                        fill: false,
-                        pointRadius: 0
-                    }, {
-                        label: 'Tényleges Bevétel',
-                        data: getCumulativeData(),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true,
-                        tension: 0.3
-                    }]
+                    datasets: [
+                        {
+                            label: 'Cél (havi 2M)',
+                            data: targetData,
+                            borderColor: '#cbd5e1',
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Kiállított számlák',
+                            data: getChartData(false),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Beérkezett pénz',
+                            data: getChartData(true),
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => v/1000000 + 'M' } }
-                    }
+                        y: { beginAtZero: true, ticks: { callback: v => v/1000000 + 'M Ft' } }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
         }
 
-        function getCumulativeData() {
+        function getChartData(onlyPaid) {
             const monthlyTotals = new Array(12).fill(0);
             invoices.forEach(inv => {
+                if (onlyPaid && !inv.paid) return;
                 const month = new Date(inv.date).getMonth();
                 monthlyTotals[month] += inv.amount;
             });
             
             let runningTotal = 0;
-            return monthlyTotals.map(sum => {
-                if (sum === 0 && runningTotal === 0 && new Date().getMonth() < monthlyTotals.indexOf(sum)) return null;
+            const currentMonth = new Date().getMonth();
+            return monthlyTotals.map((sum, index) => {
                 runningTotal += sum;
-                return runningTotal;
+                // Csak az aktuális hónapig mutassa a vonalat, vagy ha van benne adat
+                return (index <= currentMonth || sum > 0) ? runningTotal : null;
             });
         }
 
         function updateChart() {
-            myChart.data.datasets[1].data = getCumulativeData();
+            myChart.data.datasets[1].data = getChartData(false);
+            myChart.data.datasets[2].data = getChartData(true);
             myChart.update();
         }
     </script>
