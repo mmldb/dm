@@ -3,121 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker — Nothing Style</title>
+    <title>Dobi Tracker v5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Noto+Sans+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #000000; --fg: #ffffff; --accent: #ffffff; }
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg); 
-            color: var(--fg);
-            background-image: radial-gradient(#333 0.5px, transparent 0.5px);
-            background-size: 20px 20px; /* Enyhe pöttyözött háttér */
+            font-family: 'JetBrains Mono', monospace; 
+            background-color: #000; 
+            color: #fff; 
+            -webkit-font-smoothing: antialiased;
         }
-        .mono { font-family: 'Noto Sans Mono', monospace; }
-        .dot-matrix {
-            background-image: radial-gradient(var(--fg) 1px, transparent 1px);
-            background-size: 4px 4px;
-            opacity: 0.1;
-        }
-        .border-nothing { border: 1px solid rgba(255,255,255,0.2); }
-        input, select, textarea { 
-            background: transparent !important; 
-            color: white !important; 
-            border: 1px solid rgba(255,255,255,0.2) !important;
-            border-radius: 0 !important;
-        }
-        input:focus { border-color: white !important; outline: none; }
-        .paid-card { background-color: white; color: black; }
-        .paid-card * { color: black !important; }
+        .border-thin { border: 1px solid rgba(255, 255, 255, 0.1); }
+        .border-b-thin { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         
-        /* Chart sötétítés */
-        #invoiceChart { filter: invert(1) hue-rotate(180deg); }
+        input, textarea, select { 
+            background: #000 !important; 
+            color: #fff !important; 
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 0 !important;
+            padding: 10px !important;
+        }
+        input:focus { border-color: #fff !important; outline: none; }
+        
+        .paid-row { opacity: 0.5; }
+        .paid-badge { background: #fff; color: #000; padding: 2px 6px; font-size: 10px; font-weight: bold; }
+
+        /* Chart text color fix */
+        canvas { margin-top: 10px; }
     </style>
 </head>
-<body class="min-h-screen p-6">
+<body class="p-4 md:p-8 max-w-3xl mx-auto">
 
-    <div id="loginScreen" class="fixed inset-0 bg-black flex flex-col items-center justify-center p-6 z-[100]">
-        <div class="w-full max-w-xs text-center">
-            <h1 class="mono text-2xl font-bold mb-8 tracking-tighter italic">DOBI_MONEY</h1>
-            <input type="password" id="passInput" placeholder="PASSWORD" class="w-full p-4 text-center mono mb-4">
-            <button onclick="checkPass()" class="w-full bg-white text-black py-4 font-black uppercase text-sm tracking-widest hover:bg-gray-200 transition">Access System</button>
+    <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100]">
+        <div class="w-64">
+            <p class="text-[10px] mb-2 opacity-50 uppercase tracking-widest text-center">Authentication</p>
+            <input type="password" id="passInput" class="w-full text-center mb-4" placeholder="••••">
+            <button onclick="checkPass()" class="w-full border border-white py-2 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition">Enter</button>
         </div>
     </div>
 
-    <div id="app" class="hidden max-w-4xl mx-auto pt-10">
-        <header class="flex justify-between items-start mb-16">
-            <div>
-                <h1 class="text-4xl font-black tracking-tighter uppercase leading-none">Dobi<br>Tracker</h1>
-                <p class="mono text-[10px] mt-2 opacity-40 uppercase tracking-[0.3em]">System Version 5.0 / 2024</p>
+    <div id="app" class="hidden">
+        <header class="mb-10">
+            <div class="flex justify-between items-end border-b-thin pb-4">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
+                    <p class="text-[10px] opacity-40 uppercase">v5.1.0-stable on April 2026</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] opacity-40 uppercase">Annual Progress</p>
+                    <p id="targetPercent" class="text-xl font-bold">0%</p>
+                </div>
             </div>
-            <button onclick="openModal()" class="w-16 h-16 border-nothing flex items-center justify-center hover:bg-white hover:text-black transition text-3xl font-light">+</button>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div class="border-nothing p-6 relative overflow-hidden">
-                <p class="mono text-[10px] opacity-40 mb-4 uppercase">Total Invoiced</p>
-                <h2 id="totalInvoiced" class="text-3xl font-black tabular-nums">0 Ft</h2>
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-10">
+            <div>
+                <p class="text-[10px] opacity-40 uppercase mb-4 border-b border-white/10 pb-1">Annual Overview</p>
+                <div class="flex justify-between py-1"><span class="text-xs">Total Invoiced</span> <span id="totalInvoiced" class="font-bold text-sm">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs">Monthly Avg</span> <span id="monthlyAvg" class="font-bold text-sm">0 Ft</span></div>
             </div>
-            <div class="border-nothing p-6 border-dashed">
-                <p class="mono text-[10px] opacity-40 mb-4 uppercase">Monthly Average</p>
-                <h2 id="monthlyAvg" class="text-3xl font-black tabular-nums">0 Ft</h2>
-                <p id="avgSub" class="mono text-[8px] mt-1 opacity-40"></p>
+            <div>
+                <p class="text-[10px] opacity-40 uppercase mb-4 border-b border-white/10 pb-1">Current Month</p>
+                <div class="flex justify-between py-1"><span class="text-xs">Issued</span> <span id="monthInvoiced" class="font-bold text-sm">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs">Paid (In pocket)</span> <span id="monthPaid" class="font-bold text-sm text-gray-400">0 Ft</span></div>
             </div>
-            <div class="border-nothing p-6 bg-white/5">
-                <p class="mono text-[10px] opacity-40 mb-2 uppercase">Current Month</p>
-                <div class="flex justify-between">
-                    <span class="text-xs">Issued</span>
-                    <span id="monthInvoiced" class="font-bold">0 Ft</span>
-                </div>
-                <div class="flex justify-between mt-1">
-                    <span class="text-xs">Paid</span>
-                    <span id="monthPaid" class="font-bold text-gray-400">0 Ft</span>
-                </div>
+        </section>
+
+        <section class="mb-12">
+            <div class="h-64 w-full">
+                <canvas id="invoiceChart"></canvas>
             </div>
+        </section>
+
+        <div class="mb-10">
+            <button onclick="openModal()" class="w-full border border-white/20 py-4 text-xs uppercase tracking-[0.4em] hover:bg-white hover:text-black transition">+ Add Invoice</button>
         </div>
 
-        <div class="border-nothing p-6 mb-12 h-64">
-            <canvas id="invoiceChart"></canvas>
-        </div>
-
-        <div class="space-y-4">
-            <h3 class="mono text-[10px] opacity-40 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Archive / Logs</h3>
-            <div id="invoiceList" class="space-y-2"></div>
-        </div>
+        <section class="space-y-4">
+            <p class="text-[10px] opacity-30 uppercase tracking-widest mb-4">Archive_Logs</p>
+            <div id="invoiceList" class="divide-y divide-white/10 border-t border-white/10"></div>
+        </section>
     </div>
 
     <div id="modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50">
-        <div class="w-full max-w-md border-nothing bg-black p-8">
-            <h3 id="modalTitle" class="text-2xl font-black mb-8 uppercase tracking-tighter">New Entry</h3>
+        <div class="w-full max-w-sm">
+            <h3 id="modalTitle" class="text-xs uppercase tracking-widest mb-8 text-center opacity-50">Entry_Update</h3>
             <input type="hidden" id="editId">
-            <div class="space-y-6">
-                <div>
-                    <label class="mono text-[9px] opacity-40 block mb-1">PARTNER</label>
-                    <input type="text" id="company" class="w-full p-3 outline-none">
+            <div class="space-y-4">
+                <input type="text" id="company" placeholder="PARTNER" class="w-full text-xs uppercase">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="amount" placeholder="AMOUNT HUF" class="w-full text-xs">
+                    <input type="date" id="date" class="w-full text-xs uppercase">
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="mono text-[9px] opacity-40 block mb-1">AMOUNT (HUF)</label>
-                        <input type="number" id="amount" class="w-full p-3 outline-none">
-                    </div>
-                    <div>
-                        <label class="mono text-[9px] opacity-40 block mb-1">DATE</label>
-                        <input type="date" id="date" class="w-full p-3 outline-none">
-                    </div>
-                </div>
-                <div>
-                    <label class="mono text-[9px] opacity-40 block mb-1">NOTES / REFERENCE</label>
-                    <textarea id="note" class="w-full p-3 h-24 resize-none outline-none text-sm"></textarea>
-                </div>
+                <textarea id="note" placeholder="NOTES / INVOICE #" class="w-full h-20 text-xs resize-none"></textarea>
                 
-                <div class="flex gap-4 pt-4">
-                    <button onclick="closeModal()" class="flex-1 py-4 mono text-xs opacity-40 hover:opacity-100 uppercase">Cancel</button>
-                    <button onclick="saveInvoice()" class="flex-1 bg-white text-black py-4 font-bold uppercase text-sm">Save Record</button>
+                <div class="flex gap-2 pt-4">
+                    <button onclick="closeModal()" class="flex-1 py-3 text-[10px] uppercase opacity-40">Abort</button>
+                    <button onclick="saveInvoice()" class="flex-1 bg-white text-black py-3 text-[10px] font-bold uppercase">Commit</button>
                 </div>
-                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-500 text-[10px] hidden mono opacity-60 hover:opacity-100 uppercase">Delete Record</button>
+                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-500 text-[9px] hidden uppercase opacity-50 hover:opacity-100 mt-4">Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -128,11 +113,12 @@
         let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
         let editingId = null;
 
+        // AUTH
         function checkPass() {
             if (document.getElementById('passInput').value === 'dobimoney') {
                 localStorage.setItem('auth', 'true');
                 showApp();
-            } else { alert('DENIED'); }
+            } else { alert('ACCESS DENIED'); }
         }
         if (localStorage.getItem('auth') === 'true') showApp();
 
@@ -150,14 +136,12 @@
             
             if (id) {
                 const inv = invoices.find(i => i.id === id);
-                document.getElementById('modalTitle').innerText = "Edit Entry";
                 document.getElementById('company').value = inv.company;
                 document.getElementById('amount').value = inv.amount;
                 document.getElementById('date').value = inv.date;
                 document.getElementById('note').value = inv.note || "";
                 deleteBtn.classList.remove('hidden');
             } else {
-                document.getElementById('modalTitle').innerText = "New Entry";
                 document.getElementById('company').value = "";
                 document.getElementById('amount').value = "";
                 document.getElementById('note').value = "";
@@ -170,19 +154,17 @@
 
         function saveInvoice() {
             const data = {
-                company: document.getElementById('company').value || 'NO_NAME',
+                company: document.getElementById('company').value || 'UNNAMED',
                 amount: parseFloat(document.getElementById('amount').value) || 0,
                 date: document.getElementById('date').value,
                 note: document.getElementById('note').value
             };
-
             if (editingId) {
                 const index = invoices.findIndex(i => i.id === editingId);
                 invoices[index] = { ...invoices[index], ...data };
             } else {
                 invoices.push({ id: Date.now(), ...data, paid: false });
             }
-
             persistAndRefresh();
             closeModal();
         }
@@ -194,7 +176,7 @@
         }
 
         function deleteInvoice() {
-            if (confirm('DELETE?')) {
+            if (confirm('CONFIRM DELETE?')) {
                 invoices = invoices.filter(i => i.id !== editingId);
                 persistAndRefresh();
                 closeModal();
@@ -210,44 +192,38 @@
 
         function calculateStats() {
             const now = new Date();
-            const currentMonthIndex = now.getMonth() + 1; // Jan = 1, Apr = 4
-            const currentYear = now.getFullYear();
-
+            const elapsedMonths = now.getMonth() + 1;
             const total = invoices.reduce((sum, inv) => sum + inv.amount, 0);
             
-            // ÁTLAG SZÁMÍTÁS (Total / Eltelt hónapok száma)
-            const avg = total / currentMonthIndex;
-
-            // HAVI SZŰRÉS
             const monthInvoices = invoices.filter(inv => {
                 const d = new Date(inv.date);
-                return d.getMonth() === now.getMonth() && d.getFullYear() === currentYear;
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             });
             const mInvoiced = monthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
             const mPaid = monthInvoices.filter(i => i.paid).reduce((sum, inv) => sum + inv.amount, 0);
 
             document.getElementById('totalInvoiced').innerText = total.toLocaleString() + ' Ft';
-            document.getElementById('monthlyAvg').innerText = Math.round(avg).toLocaleString() + ' Ft';
-            document.getElementById('avgSub').innerText = `DIVIDED BY ${currentMonthIndex} MONTHS`;
+            document.getElementById('monthlyAvg').innerText = Math.round(total / elapsedMonths).toLocaleString() + ' Ft';
             document.getElementById('monthInvoiced').innerText = mInvoiced.toLocaleString() + ' Ft';
             document.getElementById('monthPaid').innerText = mPaid.toLocaleString() + ' Ft';
+            document.getElementById('targetPercent').innerText = Math.round((total / (targetMonthly * 12)) * 100) + '%';
         }
 
         function renderList() {
             const list = document.getElementById('invoiceList');
             list.innerHTML = invoices.sort((a,b) => new Date(b.date) - new Date(a.date))
                 .map(inv => `
-                    <div class="border-nothing p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${inv.paid ? 'paid-card' : ''}">
-                        <div class="flex items-start gap-4">
-                            <input type="checkbox" ${inv.paid ? 'checked' : ''} onchange="togglePaid(${inv.id})" class="mt-1 w-5 h-5 accent-black">
+                    <div class="py-4 flex justify-between items-start ${inv.paid ? 'paid-row' : ''}">
+                        <div class="flex gap-4">
+                            <input type="checkbox" ${inv.paid ? 'checked' : ''} onchange="togglePaid(${inv.id})" class="mt-1 w-4 h-4 accent-white">
                             <div>
-                                <div class="text-lg font-black uppercase tracking-tighter">${inv.company}</div>
-                                <div class="mono text-[10px] opacity-40">${inv.date} ${inv.note ? ' // ' + inv.note : ''}</div>
+                                <div class="text-xs font-bold uppercase">${inv.company} ${inv.paid ? '<span class="paid-badge ml-2">PAID</span>' : ''}</div>
+                                <div class="text-[9px] opacity-40 mt-1">${inv.date} ${inv.note ? ' // ' + inv.note : ''}</div>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between md:justify-end gap-8">
-                            <div class="text-xl font-black tabular-nums">${inv.amount.toLocaleString()} <span class="text-[10px] font-normal">HUF</span></div>
-                            <button onclick="openModal(${inv.id})" class="mono text-[10px] opacity-40 hover:opacity-100 underline uppercase tracking-widest">Edit</button>
+                        <div class="text-right">
+                            <div class="text-xs font-bold">${inv.amount.toLocaleString()}</div>
+                            <button onclick="openModal(${inv.id})" class="text-[9px] opacity-30 hover:opacity-100 underline uppercase mt-1">Edit</button>
                         </div>
                     </div>
                 `).join('');
@@ -260,16 +236,16 @@
                 data: {
                     labels: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
                     datasets: [
-                        { label: 'TARGET', data: Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly), borderColor: '#444', borderDash: [2, 2], fill: false, pointRadius: 0, borderWidth: 1 },
-                        { label: 'ISSUED', data: getChartData(false), borderColor: '#fff', tension: 0, borderWidth: 2, pointBackgroundColor: '#fff' },
-                        { label: 'PAID', data: getChartData(true), borderColor: '#888', backgroundColor: 'rgba(255, 255, 255, 0.05)', fill: true, tension: 0, borderWidth: 1 }
+                        { label: 'TARGET', data: Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly), borderColor: 'rgba(255,255,255,0.1)', borderDash: [2, 2], pointRadius: 0, borderWidth: 1 },
+                        { label: 'ISSUED', data: getChartData(false), borderColor: '#fff', tension: 0.1, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#fff' },
+                        { label: 'PAID', data: getChartData(true), borderColor: 'rgba(255,255,255,0.4)', fill: true, backgroundColor: 'rgba(255,255,255,0.05)', tension: 0.1, borderWidth: 1, pointRadius: 0 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     scales: {
-                        y: { grid: { color: '#222' }, ticks: { color: '#444', font: { family: 'Noto Sans Mono', size: 9 } } },
-                        x: { grid: { display: false }, ticks: { color: '#444', font: { family: 'Noto Sans Mono', size: 9 } } }
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 8 } } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 8 } } }
                     },
                     plugins: { legend: { display: false } }
                 }
