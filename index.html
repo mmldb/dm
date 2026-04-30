@@ -3,58 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DobiMoney Tracker V2</title>
+    <title>DobiMoney Tracker V3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
         .paid-bg { background-color: #f0fdf4; border-left-color: #22c55e !important; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:active { transform: scale(0.98); }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans">
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
 
     <div id="loginScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-6 z-[100]">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
-            <h1 class="text-2xl font-bold mb-6 text-slate-800">DobiMoney Login</h1>
-            <input type="password" id="passInput" placeholder="Jelszó" class="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500">
-            <button onclick="checkPass()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Belépés</button>
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
+            <h1 class="text-3xl font-extrabold mb-2 text-slate-800">DobiMoney</h1>
+            <p class="text-slate-500 mb-8">Kérlek add meg a jelszavad</p>
+            <input type="password" id="passInput" placeholder="Jelszó" class="w-full p-4 border-2 rounded-2xl mb-4 outline-none focus:border-blue-500 transition-all text-center text-xl tracking-widest">
+            <button onclick="checkPass()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:bg-blue-700 active:bg-blue-800 transition">Belépés</button>
         </div>
     </div>
 
     <div id="app" class="hidden pb-20">
-        <header class="p-6 flex justify-between items-center bg-white shadow-sm sticky top-0 z-10">
-            <h2 class="text-xl font-bold text-slate-800">DobiMoney Tracker</h2>
-            <button onclick="openModal()" class="bg-green-500 text-white w-12 h-12 rounded-full text-2xl shadow-lg flex items-center justify-center hover:scale-105 transition">+</button>
+        <header class="p-6 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-100">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">DobiMoney</h2>
+                <p id="currentYearDisplay" class="text-xs font-bold text-blue-600 uppercase tracking-widest"></p>
+            </div>
+            <button onclick="openModal()" class="bg-blue-600 text-white w-14 h-14 rounded-2xl text-3xl shadow-blue-200 shadow-xl flex items-center justify-center hover:rotate-90 transition-all duration-300">+</button>
         </header>
 
-        <main class="p-4 max-w-4xl mx-auto">
-            <div class="bg-white p-4 rounded-xl shadow-sm mb-6">
-                <canvas id="invoiceChart"></canvas>
+        <main class="p-4 max-w-4xl mx-auto space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <p class="text-sm font-medium text-slate-500 mb-1">Összes kiszámlázva</p>
+                    <h3 id="totalInvoiced" class="text-3xl font-black text-slate-800">0 Ft</h3>
+                </div>
+                <div class="stat-card bg-green-50 p-6 rounded-3xl shadow-sm border border-green-100">
+                    <p class="text-sm font-medium text-green-600 mb-1">Beérkezett összeg</p>
+                    <h3 id="totalPaid" class="text-3xl font-black text-green-700">0 Ft</h3>
+                </div>
             </div>
 
-            <div id="invoiceList" class="space-y-3"></div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <canvas id="invoiceChart" height="200"></canvas>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Legutóbbi számlák</h4>
+                <div id="invoiceList" class="space-y-3"></div>
+            </div>
         </main>
     </div>
 
-    <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
-            <h3 id="modalTitle" class="text-lg font-bold mb-4">Új számla</h3>
+    <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all">
+            <h3 id="modalTitle" class="text-xl font-bold mb-6 text-slate-800 text-center">Új számla</h3>
             <input type="hidden" id="editId">
             <div class="space-y-4">
-                <input type="text" id="company" placeholder="Cég neve" class="w-full p-3 border rounded-lg">
-                <div class="flex gap-2">
-                    <select id="currency" class="p-3 border rounded-lg bg-white">
-                        <option value="HUF">HUF</option>
-                        <option value="EUR">EUR</option>
-                    </select>
-                    <input type="number" id="amount" placeholder="Összeg HUF-ban" class="flex-1 p-3 border rounded-lg">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-400 ml-1">PARTNER</label>
+                    <input type="text" id="company" placeholder="Cég neve" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-                <input type="date" id="date" class="w-full p-3 border rounded-lg">
-                <div class="flex gap-2 pt-2">
-                    <button onclick="closeModal()" class="flex-1 py-3 bg-slate-100 rounded-lg font-medium">Mégse</button>
-                    <button onclick="saveInvoice()" class="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium">Mentés</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-400 ml-1">VALUTA</label>
+                        <select id="currency" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="HUF">HUF</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2 space-y-1">
+                        <label class="text-xs font-bold text-slate-400 ml-1">ÖSSZEG (HUF-BAN)</label>
+                        <input type="number" id="amount" placeholder="Példa: 500000" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
                 </div>
-                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-500 text-sm hidden">Számla törlése</button>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-400 ml-1">DÁTUM</label>
+                    <input type="date" id="date" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition">Mégse</button>
+                    <button onclick="saveInvoice()" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Mentés</button>
+                </div>
+                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-400 text-sm font-medium hidden hover:text-red-600 transition">Számla végleges törlése</button>
             </div>
         </div>
     </div>
@@ -77,8 +110,9 @@
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
+            document.getElementById('currentYearDisplay').innerText = new Date().getFullYear() + " ÉVES TERV";
             initChart();
-            renderList();
+            persistAndRefresh();
         }
 
         // MODAL LOGIC
@@ -90,14 +124,14 @@
             
             if (id) {
                 const inv = invoices.find(i => i.id === id);
-                document.getElementById('modalTitle').innerText = "Számla szerkesztése";
+                document.getElementById('modalTitle').innerText = "Számla módosítása";
                 document.getElementById('company').value = inv.company;
                 document.getElementById('amount').value = inv.amount;
                 document.getElementById('currency').value = inv.currency;
                 document.getElementById('date').value = inv.date;
                 deleteBtn.classList.remove('hidden');
             } else {
-                document.getElementById('modalTitle').innerText = "Új számla";
+                document.getElementById('modalTitle').innerText = "Új számla hozzáadása";
                 document.getElementById('company').value = "";
                 document.getElementById('amount').value = "";
                 document.getElementById('date').valueAsDate = new Date();
@@ -107,16 +141,14 @@
 
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-        // CRUD OPERATIONS
+        // CRUD & CALCS
         function saveInvoice() {
             const data = {
-                company: document.getElementById('company').value,
-                amount: parseFloat(document.getElementById('amount').value),
+                company: document.getElementById('company').value || 'Névtelen partner',
+                amount: parseFloat(document.getElementById('amount').value) || 0,
                 currency: document.getElementById('currency').value,
                 date: document.getElementById('date').value
             };
-
-            if (!data.amount || !data.date) return alert('Hiányzó adatok!');
 
             if (editingId) {
                 const index = invoices.findIndex(i => i.id === editingId);
@@ -136,7 +168,7 @@
         }
 
         function deleteInvoice() {
-            if (confirm('Biztosan törlöd?')) {
+            if (confirm('Biztosan törölni akarod ezt a számlát?')) {
                 invoices = invoices.filter(i => i.id !== editingId);
                 persistAndRefresh();
                 closeModal();
@@ -145,28 +177,40 @@
 
         function persistAndRefresh() {
             localStorage.setItem('invoices', JSON.stringify(invoices));
+            calculateStats();
             renderList();
             updateChart();
         }
 
-        // UI RENDER
+        function calculateStats() {
+            const total = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+            const paid = invoices.filter(i => i.paid).reduce((sum, inv) => sum + inv.amount, 0);
+            
+            document.getElementById('totalInvoiced').innerText = total.toLocaleString() + ' Ft';
+            document.getElementById('totalPaid').innerText = paid.toLocaleString() + ' Ft';
+        }
+
         function renderList() {
             const list = document.getElementById('invoiceList');
+            if (invoices.length === 0) {
+                list.innerHTML = `<p class="text-center text-slate-400 py-10">Még nincs rögzített számla.</p>`;
+                return;
+            }
             list.innerHTML = invoices.sort((a,b) => new Date(b.date) - new Date(a.date))
                 .map(inv => `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-400 flex items-center justify-between ${inv.paid ? 'paid-bg' : ''}">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between transition-all ${inv.paid ? 'paid-bg shadow-none border-green-200' : ''}">
                         <div class="flex items-center gap-4">
                             <input type="checkbox" ${inv.paid ? 'checked' : ''} 
                                    onchange="togglePaid(${inv.id})" 
-                                   class="w-6 h-6 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer">
+                                   class="w-6 h-6 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
                             <div>
                                 <div class="font-bold text-slate-800">${inv.company}</div>
-                                <div class="text-xs text-slate-500">${inv.date}</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">${inv.date}</div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="font-mono font-bold text-slate-700">${inv.amount.toLocaleString()} Ft</div>
-                            <button onclick="openModal(${inv.id})" class="text-blue-500 text-xs font-medium hover:underline mt-1">Szerkesztés</button>
+                        <div class="text-right flex flex-col items-end">
+                            <div class="font-black text-slate-700 tracking-tight">${inv.amount.toLocaleString()} Ft</div>
+                            <button onclick="openModal(${inv.id})" class="text-blue-500 text-[10px] font-black uppercase tracking-widest mt-1 hover:text-blue-700">Szerkesztés</button>
                         </div>
                     </div>
                 `).join('');
@@ -183,37 +227,48 @@
                     labels: ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec'],
                     datasets: [
                         {
-                            label: 'Cél (havi 2M)',
+                            label: 'Cél',
                             data: targetData,
-                            borderColor: '#cbd5e1',
+                            borderColor: '#e2e8f0',
                             borderDash: [5, 5],
                             fill: false,
-                            pointRadius: 0
+                            pointRadius: 0,
+                            borderWidth: 2
                         },
                         {
-                            label: 'Kiállított számlák',
+                            label: 'Számlázva',
                             data: getChartData(false),
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.05)',
                             fill: false,
-                            tension: 0.3
+                            tension: 0.4,
+                            borderWidth: 3
                         },
                         {
-                            label: 'Beérkezett pénz',
+                            label: 'Beérkezett',
                             data: getChartData(true),
                             borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
                             fill: true,
-                            tension: 0.3
+                            tension: 0.4,
+                            borderWidth: 0
                         }
                     ]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => v/1000000 + 'M Ft' } }
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { display: false },
+                            ticks: { font: { size: 10 }, callback: v => v/1000000 + 'M' } 
+                        },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
                     },
-                    plugins: { legend: { position: 'bottom' } }
+                    plugins: { 
+                        legend: { display: false }
+                    }
                 }
             });
         }
@@ -230,7 +285,6 @@
             const currentMonth = new Date().getMonth();
             return monthlyTotals.map((sum, index) => {
                 runningTotal += sum;
-                // Csak az aktuális hónapig mutassa a vonalat, vagy ha van benne adat
                 return (index <= currentMonth || sum > 0) ? runningTotal : null;
             });
         }
