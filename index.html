@@ -3,91 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DobiMoney Tracker V3</title>
+    <title>DobiMoney OS v4.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .paid-bg { background-color: #f0fdf4; border-left-color: #22c55e !important; }
-        .stat-card { transition: transform 0.2s; }
-        .stat-card:active { transform: scale(0.98); }
+        body { font-family: 'Fira Code', monospace; background-color: #0a0a0a; color: #33ff33; }
+        .terminal-border { border: 1px solid #33ff33; }
+        .terminal-header { border-bottom: 1px solid #33ff33; }
+        .btn-terminal { border: 1px solid #33ff33; background: transparent; transition: all 0.2s; }
+        .btn-terminal:hover { background: #33ff33; color: #000; }
+        .scanline {
+            width: 100%; height: 2px; z-index: 99; background: rgba(0, 255, 0, 0.05);
+            position: fixed; pointer-events: none; animation: move 4s linear infinite;
+        }
+        @keyframes move { from { top: 0; } to { top: 100%; } }
+        input, select, textarea { background: #1a1a1a !important; color: #33ff33 !important; border: 1px solid #33ff33 !important; }
+        .paid-line { color: #22c55e; border-left: 4px solid #22c55e !important; }
+        canvas { filter: brightness(1.2) contrast(1.2) hue-rotate(90deg); }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+<body class="min-h-screen p-4 md:p-8">
+    <div class="scanline"></div>
 
-    <div id="loginScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-6 z-[100]">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
-            <h1 class="text-3xl font-extrabold mb-2 text-slate-800">DobiMoney</h1>
-            <p class="text-slate-500 mb-8">Kérlek add meg a jelszavad</p>
-            <input type="password" id="passInput" placeholder="Jelszó" class="w-full p-4 border-2 rounded-2xl mb-4 outline-none focus:border-blue-500 transition-all text-center text-xl tracking-widest">
-            <button onclick="checkPass()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:bg-blue-700 active:bg-blue-800 transition">Belépés</button>
+    <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center p-6 z-[100]">
+        <div class="terminal-border p-8 w-full max-w-md">
+            <h1 class="text-xl mb-6 tracking-tighter">AUTHENTICATION REQUIRED_</h1>
+            <input type="password" id="passInput" placeholder="ENTER PASSWORD" class="w-full p-3 mb-4 outline-none">
+            <button onclick="checkPass()" class="w-full btn-terminal py-3 font-bold uppercase">Execute Login</button>
         </div>
     </div>
 
-    <div id="app" class="hidden pb-20">
-        <header class="p-6 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-100">
+    <div id="app" class="hidden max-w-5xl mx-auto">
+        <header class="terminal-header pb-4 mb-6 flex justify-between items-end">
             <div>
-                <h2 class="text-2xl font-black text-slate-800 tracking-tight">DobiMoney</h2>
-                <p id="currentYearDisplay" class="text-xs font-bold text-blue-600 uppercase tracking-widest"></p>
+                <h1 class="text-2xl font-bold tracking-tighter">DOBIMONEY_OS v4.0.1</h1>
+                <p id="clock" class="text-xs opacity-70"></p>
             </div>
-            <button onclick="openModal()" class="bg-blue-600 text-white w-14 h-14 rounded-2xl text-3xl shadow-blue-200 shadow-xl flex items-center justify-center hover:rotate-90 transition-all duration-300">+</button>
+            <button onclick="openModal()" class="btn-terminal px-6 py-2 text-xl font-bold">+</button>
         </header>
 
-        <main class="p-4 max-w-4xl mx-auto space-y-6">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <p class="text-sm font-medium text-slate-500 mb-1">Összes kiszámlázva</p>
-                    <h3 id="totalInvoiced" class="text-3xl font-black text-slate-800">0 Ft</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="terminal-border p-4 bg-black/50">
+                <p class="text-xs mb-2 opacity-60 uppercase tracking-widest">Current Month Summary [MONTH_VIEW]</p>
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-[10px]">Invoiced:</p>
+                        <h2 id="monthInvoiced" class="text-xl font-bold text-blue-400">0 Ft</h2>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px]">Received:</p>
+                        <h2 id="monthPaid" class="text-xl font-bold text-green-400">0 Ft</h2>
+                    </div>
                 </div>
-                <div class="stat-card bg-green-50 p-6 rounded-3xl shadow-sm border border-green-100">
-                    <p class="text-sm font-medium text-green-600 mb-1">Beérkezett összeg</p>
-                    <h3 id="totalPaid" class="text-3xl font-black text-green-700">0 Ft</h3>
+            </div>
+            <div class="terminal-border p-4 bg-black/50 border-white/20">
+                <p class="text-xs mb-2 opacity-60 uppercase tracking-widest">Annual Total [YEAR_VIEW]</p>
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-[10px]">Total Invoiced:</p>
+                        <h2 id="totalInvoiced" class="text-xl font-bold">0 Ft</h2>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px]">Target Status:</p>
+                        <h2 id="yearStatus" class="text-xl font-bold text-yellow-500">0%</h2>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <canvas id="invoiceChart" height="200"></canvas>
-            </div>
+        <div class="terminal-border p-4 mb-8 bg-black/30 h-64">
+            <canvas id="invoiceChart"></canvas>
+        </div>
 
-            <div class="space-y-3">
-                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Legutóbbi számlák</h4>
-                <div id="invoiceList" class="space-y-3"></div>
-            </div>
-        </main>
+        <div class="space-y-2">
+            <p class="text-xs font-bold mb-4 opacity-50 underline">System.Logs / Recent_Invoices</p>
+            <div id="invoiceList" class="space-y-2 text-sm"></div>
+        </div>
     </div>
 
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all">
-            <h3 id="modalTitle" class="text-xl font-bold mb-6 text-slate-800 text-center">Új számla</h3>
+    <div id="modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="terminal-border bg-black p-6 w-full max-w-md">
+            <h3 id="modalTitle" class="text-lg font-bold mb-6 underline uppercase">Add New Record</h3>
             <input type="hidden" id="editId">
             <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-400 ml-1">PARTNER</label>
-                    <input type="text" id="company" placeholder="Cég neve" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="company" placeholder="PARTNER NAME" class="w-full p-3 outline-none">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="amount" placeholder="AMOUNT (HUF)" class="w-full p-3 outline-none">
+                    <input type="date" id="date" class="w-full p-3 outline-none uppercase">
                 </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-400 ml-1">VALUTA</label>
-                        <select id="currency" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="HUF">HUF</option>
-                            <option value="EUR">EUR</option>
-                        </select>
-                    </div>
-                    <div class="col-span-2 space-y-1">
-                        <label class="text-xs font-bold text-slate-400 ml-1">ÖSSZEG (HUF-BAN)</label>
-                        <input type="number" id="amount" placeholder="Példa: 500000" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
+                <textarea id="note" placeholder="NOTES (Invoice #, details, etc.)" class="w-full p-3 h-20 outline-none text-xs"></textarea>
+                
+                <div class="flex gap-4 pt-4">
+                    <button onclick="closeModal()" class="flex-1 py-3 opacity-60 hover:opacity-100 transition">ABORT</button>
+                    <button onclick="saveInvoice()" class="flex-1 btn-terminal py-3 font-bold">COMMIT</button>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-400 ml-1">DÁTUM</label>
-                    <input type="date" id="date" class="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button onclick="closeModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition">Mégse</button>
-                    <button onclick="saveInvoice()" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Mentés</button>
-                </div>
-                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-400 text-sm font-medium hidden hover:text-red-600 transition">Számla végleges törlése</button>
+                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-2 text-red-500 text-[10px] hidden underline">DELETE_RECORD</button>
             </div>
         </div>
     </div>
@@ -103,37 +114,36 @@
             if (document.getElementById('passInput').value === 'dobimoney') {
                 localStorage.setItem('auth', 'true');
                 showApp();
-            } else { alert('Hibás jelszó!'); }
+            } else { alert('ACCESS DENIED'); }
         }
         if (localStorage.getItem('auth') === 'true') showApp();
 
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
-            document.getElementById('currentYearDisplay').innerText = new Date().getFullYear() + " ÉVES TERV";
+            setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString('hu-HU'); }, 1000);
             initChart();
             persistAndRefresh();
         }
 
-        // MODAL LOGIC
         function openModal(id = null) {
             editingId = id;
-            const modal = document.getElementById('modal');
+            document.getElementById('modal').classList.remove('hidden');
             const deleteBtn = document.getElementById('deleteBtn');
-            modal.classList.remove('hidden');
             
             if (id) {
                 const inv = invoices.find(i => i.id === id);
-                document.getElementById('modalTitle').innerText = "Számla módosítása";
+                document.getElementById('modalTitle').innerText = "Edit Record";
                 document.getElementById('company').value = inv.company;
                 document.getElementById('amount').value = inv.amount;
-                document.getElementById('currency').value = inv.currency;
                 document.getElementById('date').value = inv.date;
+                document.getElementById('note').value = inv.note || "";
                 deleteBtn.classList.remove('hidden');
             } else {
-                document.getElementById('modalTitle').innerText = "Új számla hozzáadása";
+                document.getElementById('modalTitle').innerText = "Add Record";
                 document.getElementById('company').value = "";
                 document.getElementById('amount').value = "";
+                document.getElementById('note').value = "";
                 document.getElementById('date').valueAsDate = new Date();
                 deleteBtn.classList.add('hidden');
             }
@@ -141,13 +151,12 @@
 
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-        // CRUD & CALCS
         function saveInvoice() {
             const data = {
-                company: document.getElementById('company').value || 'Névtelen partner',
+                company: document.getElementById('company').value || 'UNKNOWN_PRTNR',
                 amount: parseFloat(document.getElementById('amount').value) || 0,
-                currency: document.getElementById('currency').value,
-                date: document.getElementById('date').value
+                date: document.getElementById('date').value,
+                note: document.getElementById('note').value
             };
 
             if (editingId) {
@@ -168,7 +177,7 @@
         }
 
         function deleteInvoice() {
-            if (confirm('Biztosan törölni akarod ezt a számlát?')) {
+            if (confirm('DELETE PERMANENTLY?')) {
                 invoices = invoices.filter(i => i.id !== editingId);
                 persistAndRefresh();
                 closeModal();
@@ -183,92 +192,66 @@
         }
 
         function calculateStats() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
             const total = invoices.reduce((sum, inv) => sum + inv.amount, 0);
             const paid = invoices.filter(i => i.paid).reduce((sum, inv) => sum + inv.amount, 0);
             
+            // Havi szűrés
+            const monthInvoices = invoices.filter(inv => {
+                const d = new Date(inv.date);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            });
+            const mInvoiced = monthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+            const mPaid = monthInvoices.filter(i => i.paid).reduce((sum, inv) => sum + inv.amount, 0);
+
             document.getElementById('totalInvoiced').innerText = total.toLocaleString() + ' Ft';
-            document.getElementById('totalPaid').innerText = paid.toLocaleString() + ' Ft';
+            document.getElementById('yearStatus').innerText = Math.round((total / (targetMonthly * 12)) * 100) + '%';
+            document.getElementById('monthInvoiced').innerText = mInvoiced.toLocaleString() + ' Ft';
+            document.getElementById('monthPaid').innerText = mPaid.toLocaleString() + ' Ft';
         }
 
         function renderList() {
             const list = document.getElementById('invoiceList');
-            if (invoices.length === 0) {
-                list.innerHTML = `<p class="text-center text-slate-400 py-10">Még nincs rögzített számla.</p>`;
-                return;
-            }
             list.innerHTML = invoices.sort((a,b) => new Date(b.date) - new Date(a.date))
                 .map(inv => `
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between transition-all ${inv.paid ? 'paid-bg shadow-none border-green-200' : ''}">
-                        <div class="flex items-center gap-4">
-                            <input type="checkbox" ${inv.paid ? 'checked' : ''} 
-                                   onchange="togglePaid(${inv.id})" 
-                                   class="w-6 h-6 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                    <div class="border border-white/10 p-3 bg-black/20 flex flex-col md:flex-row md:items-center justify-between gap-2 ${inv.paid ? 'paid-line' : ''}">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${inv.paid ? 'checked' : ''} onchange="togglePaid(${inv.id})" class="w-5 h-5 cursor-pointer">
                             <div>
-                                <div class="font-bold text-slate-800">${inv.company}</div>
-                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">${inv.date}</div>
+                                <div class="font-bold uppercase tracking-widest">${inv.company} <span class="text-[10px] opacity-40 ml-2">${inv.date}</span></div>
+                                ${inv.note ? `<div class="text-[10px] text-white/50 mt-1 italic">> ${inv.note}</div>` : ''}
                             </div>
                         </div>
-                        <div class="text-right flex flex-col items-end">
-                            <div class="font-black text-slate-700 tracking-tight">${inv.amount.toLocaleString()} Ft</div>
-                            <button onclick="openModal(${inv.id})" class="text-blue-500 text-[10px] font-black uppercase tracking-widest mt-1 hover:text-blue-700">Szerkesztés</button>
+                        <div class="flex items-center justify-between md:justify-end gap-6">
+                            <div class="font-bold text-lg">${inv.amount.toLocaleString()} <span class="text-xs">HUF</span></div>
+                            <button onclick="openModal(${inv.id})" class="text-[10px] underline hover:text-white transition">EDIT_STUB</button>
                         </div>
                     </div>
                 `).join('');
         }
 
-        // CHART LOGIC
         function initChart() {
             const ctx = document.getElementById('invoiceChart').getContext('2d');
-            const targetData = Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly);
-            
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec'],
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                     datasets: [
-                        {
-                            label: 'Cél',
-                            data: targetData,
-                            borderColor: '#e2e8f0',
-                            borderDash: [5, 5],
-                            fill: false,
-                            pointRadius: 0,
-                            borderWidth: 2
-                        },
-                        {
-                            label: 'Számlázva',
-                            data: getChartData(false),
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3
-                        },
-                        {
-                            label: 'Beérkezett',
-                            data: getChartData(true),
-                            borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 0
-                        }
+                        { label: 'TARGET', data: Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly), borderColor: '#ffffff', borderDash: [5, 5], fill: false, pointRadius: 0 },
+                        { label: 'ISSUED', data: getChartData(false), borderColor: '#3b82f6', tension: 0.3, borderWidth: 2 },
+                        { label: 'PAID', data: getChartData(true), borderColor: '#33ff33', backgroundColor: 'rgba(51, 255, 51, 0.1)', fill: true, tension: 0.3 }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            grid: { display: false },
-                            ticks: { font: { size: 10 }, callback: v => v/1000000 + 'M' } 
-                        },
-                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                        y: { grid: { color: '#ffffff10' }, ticks: { color: '#33ff33', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#33ff33', font: { size: 9 } } }
                     },
-                    plugins: { 
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
@@ -280,12 +263,10 @@
                 const month = new Date(inv.date).getMonth();
                 monthlyTotals[month] += inv.amount;
             });
-            
             let runningTotal = 0;
-            const currentMonth = new Date().getMonth();
             return monthlyTotals.map((sum, index) => {
                 runningTotal += sum;
-                return (index <= currentMonth || sum > 0) ? runningTotal : null;
+                return (index <= new Date().getMonth() || sum > 0) ? runningTotal : null;
             });
         }
 
