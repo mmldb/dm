@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v5.3</title>
+    <title>Dobi Tracker v5.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -16,7 +16,6 @@
 
     <style>
         body { font-family: 'JetBrains Mono', monospace; background-color: #000; color: #fff; -webkit-font-smoothing: antialiased; }
-        .border-thin { border: 1px solid rgba(255, 255, 255, 0.1); }
         .border-b-thin { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         input, textarea, select { background: #000 !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 0 !important; padding: 10px !important; }
         input:focus, select:focus { border-color: #fff !important; outline: none; }
@@ -42,7 +41,7 @@
             <div class="flex justify-between items-end border-b-thin pb-4">
                 <div>
                     <h1 class="text-xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase">v5.3.0-stable</p>
+                    <p class="text-[10px] opacity-40 uppercase">v5.4.0-stable</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase">Annual Progress</p>
@@ -58,8 +57,7 @@
                 <div class="flex justify-between py-1"><span class="text-xs">Total Invoiced</span> <span id="totalInvoiced" class="font-bold text-sm">0 Ft</span></div>
                 <div class="flex justify-between py-1"><span class="text-xs">Paid (Income)</span> <span id="totalPaidAnnual" class="font-bold text-sm text-gray-400">0 Ft</span></div>
                 <div class="flex justify-between py-1 border-t border-white/5 mt-2 pt-1"><span class="text-xs expense-text">Total Expenses</span> <span id="totalExpenses" class="font-bold text-sm expense-text">0 Ft</span></div>
-                <div class="flex justify-between py-1"><span class="text-xs">Avg Income/mo</span> <span id="monthlyAvg" class="font-bold text-sm">0 Ft</span></div>
-                <div class="flex justify-between py-1"><span class="text-xs">Avg Expense/mo</span> <span id="monthlyAvgExp" class="font-bold text-sm opacity-60">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs font-bold text-white/40">Monthly Avg</span> <span id="monthlyAvg" class="font-bold text-sm">0 Ft</span></div>
             </div>
             <div>
                 <p class="text-[10px] opacity-40 uppercase mb-4 border-b border-white/10 pb-1">Current Month</p>
@@ -88,7 +86,7 @@
 
     <!-- MODAL -->
     <div id="modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50">
-        <div class="w-full max-sm">
+        <div class="w-full max-w-sm">
             <h3 class="text-xs uppercase tracking-widest mb-8 text-center opacity-50">System_Entry</h3>
             <input type="hidden" id="editId">
             <div class="space-y-4">
@@ -169,7 +167,7 @@
                 const index = entries.findIndex(i => i.id === editingId);
                 entries[index] = { ...entries[index], ...data };
             } else {
-                entries.push({ id: Date.now(), ...data, paid: data.type === 'expense' }); // Kiadás alapból "fizetve"
+                entries.push({ id: Date.now(), ...data, paid: data.type === 'expense' });
             }
             persistAndRefresh();
             closeModal();
@@ -177,7 +175,7 @@
 
         function togglePaid(id) {
             const index = entries.findIndex(i => i.id === id);
-            if(entries[index].type === 'expense') return; // Kiadást ne lehessen pipálni
+            if(entries[index].type === 'expense') return;
             entries[index].paid = !entries[index].paid;
             persistAndRefresh();
         }
@@ -200,7 +198,6 @@
         function calculateStats() {
             const now = new Date();
             const elapsedMonths = now.getMonth() + 1;
-            
             const incomeEntries = entries.filter(e => e.type !== 'expense');
             const expenseEntries = entries.filter(e => e.type === 'expense');
 
@@ -215,7 +212,6 @@
             document.getElementById('totalPaidAnnual').innerText = totalPaidAnnual.toLocaleString() + ' Ft';
             document.getElementById('totalExpenses').innerText = totalExpenses.toLocaleString() + ' Ft';
             document.getElementById('monthlyAvg').innerText = Math.round(totalInvoiced / elapsedMonths).toLocaleString() + ' Ft';
-            document.getElementById('monthlyAvgExp').innerText = Math.round(totalExpenses / elapsedMonths).toLocaleString() + ' Ft';
             
             document.getElementById('monthInvoiced').innerText = currentMonthIncomes.reduce((s,i)=>s+i.amount,0).toLocaleString() + ' Ft';
             document.getElementById('monthPaid').innerText = currentMonthIncomes.filter(i=>i.paid).reduce((s,i)=>s+i.amount,0).toLocaleString() + ' Ft';
@@ -254,8 +250,9 @@
                     labels: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
                     datasets: [
                         { label: 'TARGET', data: Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly), borderColor: 'rgba(255,255,255,0.1)', borderDash: [2, 2], pointRadius: 0, borderWidth: 1 },
-                        { label: 'ISSUED', data: getChartData(false), borderColor: '#fff', tension: 0.1, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#fff' },
-                        { label: 'PAID', data: getChartData(true), borderColor: 'rgba(255,255,255,0.4)', fill: true, backgroundColor: 'rgba(255,255,255,0.05)', tension: 0.1, borderWidth: 1, pointRadius: 0 }
+                        { label: 'ISSUED', data: getChartData('income', false), borderColor: '#fff', tension: 0.1, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#fff' },
+                        { label: 'PAID', data: getChartData('income', true), borderColor: 'rgba(255,255,255,0.4)', fill: true, backgroundColor: 'rgba(255,255,255,0.05)', tension: 0.1, borderWidth: 1, pointRadius: 0 },
+                        { label: 'EXPENSES', data: getChartData('expense', false), borderColor: '#ff4444', tension: 0.1, borderWidth: 2, pointRadius: 0 }
                     ]
                 },
                 options: {
@@ -269,12 +266,12 @@
             });
         }
 
-        function getChartData(onlyPaid) {
+        function getChartData(type, onlyPaid) {
             const monthlyTotals = new Array(12).fill(0);
-            entries.filter(e => e.type !== 'expense').forEach(inv => {
-                if (onlyPaid && !inv.paid) return;
-                const month = new Date(inv.date).getMonth();
-                monthlyTotals[month] += inv.amount;
+            entries.filter(e => e.type === type).forEach(item => {
+                if (type === 'income' && onlyPaid && !item.paid) return;
+                const month = new Date(item.date).getMonth();
+                monthlyTotals[month] += item.amount;
             });
             let runningTotal = 0;
             return monthlyTotals.map((sum, index) => {
@@ -284,8 +281,9 @@
         }
 
         function updateChart() {
-            myChart.data.datasets[1].data = getChartData(false);
-            myChart.data.datasets[2].data = getChartData(true);
+            myChart.data.datasets[1].data = getChartData('income', false);
+            myChart.data.datasets[2].data = getChartData('income', true);
+            myChart.data.datasets[3].data = getChartData('expense', false);
             myChart.update();
         }
     </script>
