@@ -3,47 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DobiMoney">
-
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2489/2489756.png">
-
-<link rel="manifest" href="manifest.json">
-
-    
-    
-    <title>Dobi Tracker v5.2</title>
+    <title>Dobi Tracker v5.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DobiMoney">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2489/2489756.png">
+    <link rel="manifest" href="manifest.json">
+
     <style>
-        body { 
-            font-family: 'JetBrains Mono', monospace; 
-            background-color: #000; 
-            color: #fff; 
-            -webkit-font-smoothing: antialiased;
-        }
+        body { font-family: 'JetBrains Mono', monospace; background-color: #000; color: #fff; -webkit-font-smoothing: antialiased; }
         .border-thin { border: 1px solid rgba(255, 255, 255, 0.1); }
         .border-b-thin { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        
-        input, textarea, select { 
-            background: #000 !important; 
-            color: #fff !important; 
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 0 !important;
-            padding: 10px !important;
-        }
-        input:focus { border-color: #fff !important; outline: none; }
-        
+        input, textarea, select { background: #000 !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 0 !important; padding: 10px !important; }
+        input:focus, select:focus { border-color: #fff !important; outline: none; }
         .paid-row { opacity: 0.5; }
+        .expense-text { color: #ff4444; }
         .paid-badge { background: #fff; color: #000; padding: 2px 6px; font-size: 10px; font-weight: bold; }
-        canvas { margin-top: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-3xl mx-auto">
 
+    <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100]">
         <div class="w-64">
             <p class="text-[10px] mb-2 opacity-50 uppercase tracking-widest text-center">Authentication</p>
@@ -52,12 +36,13 @@
         </div>
     </div>
 
+    <!-- MAIN APP -->
     <div id="app" class="hidden">
         <header class="mb-10">
             <div class="flex justify-between items-end border-b-thin pb-4">
                 <div>
                     <h1 class="text-xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase">v5.2.0-stable</p>
+                    <p class="text-[10px] opacity-40 uppercase">v5.3.0-stable</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase">Annual Progress</p>
@@ -66,47 +51,57 @@
             </div>
         </header>
 
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-10">
+        <!-- STATS GRID -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-10">
             <div>
                 <p class="text-[10px] opacity-40 uppercase mb-4 border-b border-white/10 pb-1">Annual Overview</p>
                 <div class="flex justify-between py-1"><span class="text-xs">Total Invoiced</span> <span id="totalInvoiced" class="font-bold text-sm">0 Ft</span></div>
-                <div class="flex justify-between py-1"><span class="text-xs">Paid</span> <span id="totalPaidAnnual" class="font-bold text-sm">0 Ft</span></div>
-                <div class="flex justify-between py-1"><span class="text-xs">Monthly Avg</span> <span id="monthlyAvg" class="font-bold text-sm">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs">Paid (Income)</span> <span id="totalPaidAnnual" class="font-bold text-sm text-gray-400">0 Ft</span></div>
+                <div class="flex justify-between py-1 border-t border-white/5 mt-2 pt-1"><span class="text-xs expense-text">Total Expenses</span> <span id="totalExpenses" class="font-bold text-sm expense-text">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs">Avg Income/mo</span> <span id="monthlyAvg" class="font-bold text-sm">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs">Avg Expense/mo</span> <span id="monthlyAvgExp" class="font-bold text-sm opacity-60">0 Ft</span></div>
             </div>
             <div>
                 <p class="text-[10px] opacity-40 uppercase mb-4 border-b border-white/10 pb-1">Current Month</p>
                 <div class="flex justify-between py-1"><span class="text-xs">Issued</span> <span id="monthInvoiced" class="font-bold text-sm">0 Ft</span></div>
-                <div class="flex justify-between py-1"><span class="text-xs">Paid</span> <span id="monthPaid" class="font-bold text-sm text-gray-400">0 Ft</span></div>
+                <div class="flex justify-between py-1"><span class="text-xs">Paid</span> <span id="monthPaid" class="font-bold text-sm opacity-50">0 Ft</span></div>
+                <div class="flex justify-between py-1 mt-2 pt-1 border-t border-white/5"><span class="text-xs expense-text">Expenses</span> <span id="monthExpenses" class="font-bold text-sm expense-text">0 Ft</span></div>
             </div>
         </section>
 
+        <!-- GRAPH -->
         <section class="mb-12">
-            <div class="h-64 w-full">
-                <canvas id="invoiceChart"></canvas>
-            </div>
+            <div class="h-64 w-full"><canvas id="invoiceChart"></canvas></div>
         </section>
 
+        <!-- ACTION -->
         <div class="mb-10">
-            <button onclick="openModal()" class="w-full border border-white/20 py-4 text-xs uppercase tracking-[0.4em] hover:bg-white hover:text-black transition">+ Add Invoice</button>
+            <button onclick="openModal()" class="w-full border border-white/20 py-4 text-xs uppercase tracking-[0.4em] hover:bg-white hover:text-black transition">+ Add Entry</button>
         </div>
 
+        <!-- LIST -->
         <section class="space-y-4">
             <p class="text-[10px] opacity-30 uppercase tracking-widest mb-4">Archive_Logs</p>
             <div id="invoiceList" class="divide-y divide-white/10 border-t border-white/10"></div>
         </section>
     </div>
 
+    <!-- MODAL -->
     <div id="modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50">
-        <div class="w-full max-w-sm">
-            <h3 id="modalTitle" class="text-xs uppercase tracking-widest mb-8 text-center opacity-50">Entry_Update</h3>
+        <div class="w-full max-sm">
+            <h3 class="text-xs uppercase tracking-widest mb-8 text-center opacity-50">System_Entry</h3>
             <input type="hidden" id="editId">
             <div class="space-y-4">
-                <input type="text" id="company" placeholder="PARTNER" class="w-full text-xs uppercase">
+                <select id="type" class="w-full text-xs uppercase">
+                    <option value="income">Income (Bevétel)</option>
+                    <option value="expense">Expense (Kiadás)</option>
+                </select>
+                <input type="text" id="company" placeholder="PARTNER / SERVICE" class="w-full text-xs uppercase">
                 <div class="grid grid-cols-2 gap-2">
                     <input type="number" id="amount" placeholder="AMOUNT HUF" class="w-full text-xs">
                     <input type="date" id="date" class="w-full text-xs uppercase">
                 </div>
-                <textarea id="note" placeholder="NOTES / INVOICE #" class="w-full h-20 text-xs resize-none"></textarea>
+                <textarea id="note" placeholder="NOTES / DETAILS" class="w-full h-20 text-xs resize-none"></textarea>
                 
                 <div class="flex gap-2 pt-4">
                     <button onclick="closeModal()" class="flex-1 py-3 text-[10px] uppercase opacity-40">Abort</button>
@@ -120,7 +115,7 @@
     <script>
         let myChart;
         const targetMonthly = 2000000;
-        let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+        let entries = JSON.parse(localStorage.getItem('invoices')) || [];
         let editingId = null;
 
         function checkPass() {
@@ -143,13 +138,15 @@
             document.getElementById('modal').classList.remove('hidden');
             const deleteBtn = document.getElementById('deleteBtn');
             if (id) {
-                const inv = invoices.find(i => i.id === id);
-                document.getElementById('company').value = inv.company;
-                document.getElementById('amount').value = inv.amount;
-                document.getElementById('date').value = inv.date;
-                document.getElementById('note').value = inv.note || "";
+                const ent = entries.find(i => i.id === id);
+                document.getElementById('type').value = ent.type || 'income';
+                document.getElementById('company').value = ent.company;
+                document.getElementById('amount').value = ent.amount;
+                document.getElementById('date').value = ent.date;
+                document.getElementById('note').value = ent.note || "";
                 deleteBtn.classList.remove('hidden');
             } else {
+                document.getElementById('type').value = 'income';
                 document.getElementById('company').value = "";
                 document.getElementById('amount').value = "";
                 document.getElementById('note').value = "";
@@ -162,37 +159,39 @@
 
         function saveInvoice() {
             const data = {
+                type: document.getElementById('type').value,
                 company: document.getElementById('company').value || 'UNNAMED',
                 amount: parseFloat(document.getElementById('amount').value) || 0,
                 date: document.getElementById('date').value,
                 note: document.getElementById('note').value
             };
             if (editingId) {
-                const index = invoices.findIndex(i => i.id === editingId);
-                invoices[index] = { ...invoices[index], ...data };
+                const index = entries.findIndex(i => i.id === editingId);
+                entries[index] = { ...entries[index], ...data };
             } else {
-                invoices.push({ id: Date.now(), ...data, paid: false });
+                entries.push({ id: Date.now(), ...data, paid: data.type === 'expense' }); // Kiadás alapból "fizetve"
             }
             persistAndRefresh();
             closeModal();
         }
 
         function togglePaid(id) {
-            const index = invoices.findIndex(i => i.id === id);
-            invoices[index].paid = !invoices[index].paid;
+            const index = entries.findIndex(i => i.id === id);
+            if(entries[index].type === 'expense') return; // Kiadást ne lehessen pipálni
+            entries[index].paid = !entries[index].paid;
             persistAndRefresh();
         }
 
         function deleteInvoice() {
             if (confirm('CONFIRM DELETE?')) {
-                invoices = invoices.filter(i => i.id !== editingId);
+                entries = entries.filter(i => i.id !== editingId);
                 persistAndRefresh();
                 closeModal();
             }
         }
 
         function persistAndRefresh() {
-            localStorage.setItem('invoices', JSON.stringify(invoices));
+            localStorage.setItem('invoices', JSON.stringify(entries));
             calculateStats();
             renderList();
             updateChart();
@@ -201,42 +200,50 @@
         function calculateStats() {
             const now = new Date();
             const elapsedMonths = now.getMonth() + 1;
-            const total = invoices.reduce((sum, inv) => sum + inv.amount, 0);
-            const totalPaidAnnual = invoices.filter(i => i.paid).reduce((sum, inv) => sum + inv.amount, 0);
             
-            const monthInvoices = invoices.filter(inv => {
-                const d = new Date(inv.date);
-                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-            });
-            const mInvoiced = monthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-            const mPaid = monthInvoices.filter(i => i.paid).reduce((sum, inv) => sum + inv.amount, 0);
+            const incomeEntries = entries.filter(e => e.type !== 'expense');
+            const expenseEntries = entries.filter(e => e.type === 'expense');
 
-            document.getElementById('totalInvoiced').innerText = total.toLocaleString() + ' Ft';
+            const totalInvoiced = incomeEntries.reduce((sum, i) => sum + i.amount, 0);
+            const totalPaidAnnual = incomeEntries.filter(i => i.paid).reduce((sum, i) => sum + i.amount, 0);
+            const totalExpenses = expenseEntries.reduce((sum, i) => sum + i.amount, 0);
+            
+            const currentMonthIncomes = incomeEntries.filter(e => new Date(e.date).getMonth() === now.getMonth());
+            const currentMonthExpenses = expenseEntries.filter(e => new Date(e.date).getMonth() === now.getMonth());
+
+            document.getElementById('totalInvoiced').innerText = totalInvoiced.toLocaleString() + ' Ft';
             document.getElementById('totalPaidAnnual').innerText = totalPaidAnnual.toLocaleString() + ' Ft';
-            document.getElementById('monthlyAvg').innerText = Math.round(total / elapsedMonths).toLocaleString() + ' Ft';
-            document.getElementById('monthInvoiced').innerText = mInvoiced.toLocaleString() + ' Ft';
-            document.getElementById('monthPaid').innerText = mPaid.toLocaleString() + ' Ft';
-            document.getElementById('targetPercent').innerText = Math.round((total / (targetMonthly * 12)) * 100) + '%';
+            document.getElementById('totalExpenses').innerText = totalExpenses.toLocaleString() + ' Ft';
+            document.getElementById('monthlyAvg').innerText = Math.round(totalInvoiced / elapsedMonths).toLocaleString() + ' Ft';
+            document.getElementById('monthlyAvgExp').innerText = Math.round(totalExpenses / elapsedMonths).toLocaleString() + ' Ft';
+            
+            document.getElementById('monthInvoiced').innerText = currentMonthIncomes.reduce((s,i)=>s+i.amount,0).toLocaleString() + ' Ft';
+            document.getElementById('monthPaid').innerText = currentMonthIncomes.filter(i=>i.paid).reduce((s,i)=>s+i.amount,0).toLocaleString() + ' Ft';
+            document.getElementById('monthExpenses').innerText = currentMonthExpenses.reduce((s,i)=>s+i.amount,0).toLocaleString() + ' Ft';
+            
+            document.getElementById('targetPercent').innerText = Math.round((totalInvoiced / (targetMonthly * 12)) * 100) + '%';
         }
 
         function renderList() {
             const list = document.getElementById('invoiceList');
-            list.innerHTML = invoices.sort((a,b) => new Date(b.date) - new Date(a.date))
-                .map(inv => `
-                    <div class="py-4 flex justify-between items-start ${inv.paid ? 'paid-row' : ''}">
+            list.innerHTML = entries.sort((a,b) => new Date(b.date) - new Date(a.date))
+                .map(ent => {
+                    const isExp = ent.type === 'expense';
+                    return `
+                    <div class="py-4 flex justify-between items-start ${ent.paid ? 'paid-row' : ''}">
                         <div class="flex gap-4">
-                            <input type="checkbox" ${inv.paid ? 'checked' : ''} onchange="togglePaid(${inv.id})" class="mt-1 w-4 h-4 accent-white">
+                            ${isExp ? '<div class="w-4"></div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
                             <div>
-                                <div class="text-xs font-bold uppercase">${inv.company} ${inv.paid ? '<span class="paid-badge ml-2">PAID</span>' : ''}</div>
-                                <div class="text-[9px] opacity-40 mt-1">${inv.date} ${inv.note ? ' // ' + inv.note : ''}</div>
+                                <div class="text-xs font-bold uppercase ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.paid && !isExp ? '<span class="paid-badge ml-2">PAID</span>' : ''}</div>
+                                <div class="text-[9px] opacity-40 mt-1">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xs font-bold">${inv.amount.toLocaleString()}</div>
-                            <button onclick="openModal(${inv.id})" class="text-[9px] opacity-30 hover:opacity-100 underline uppercase mt-1">Edit</button>
+                            <div class="text-xs font-bold ${isExp ? 'expense-text' : ''}">${isExp ? '-' : ''}${ent.amount.toLocaleString()}</div>
+                            <button onclick="openModal(${ent.id})" class="text-[9px] opacity-30 hover:opacity-100 underline uppercase mt-1">Edit</button>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
         }
 
         function initChart() {
@@ -264,7 +271,7 @@
 
         function getChartData(onlyPaid) {
             const monthlyTotals = new Array(12).fill(0);
-            invoices.forEach(inv => {
+            entries.filter(e => e.type !== 'expense').forEach(inv => {
                 if (onlyPaid && !inv.paid) return;
                 const month = new Date(inv.date).getMonth();
                 monthlyTotals[month] += inv.amount;
