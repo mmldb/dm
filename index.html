@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v5.4</title>
+    <title>Dobi Tracker v5.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -28,8 +28,8 @@
 
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100]">
-        <div class="w-64">
-            <p class="text-[10px] mb-2 opacity-50 uppercase tracking-widest text-center">Authentication</p>
+        <div class="w-64 text-center">
+            <p class="text-[10px] mb-2 opacity-50 uppercase tracking-widest">Authentication</p>
             <input type="password" id="passInput" class="w-full text-center mb-4" placeholder="••••">
             <button onclick="checkPass()" class="w-full border border-white py-2 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition">Enter</button>
         </div>
@@ -41,7 +41,7 @@
             <div class="flex justify-between items-end border-b-thin pb-4">
                 <div>
                     <h1 class="text-xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase">v5.4.0-stable</p>
+                    <p class="text-[10px] opacity-40 uppercase">v5.5.0-stable</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase">Annual Progress</p>
@@ -127,6 +127,19 @@
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
+
+            // --- ADAT MIGRÁCIÓ ---
+            // A régi bejegyzéseknek, amiknek még nincs típusa, 'income' típust adunk
+            let migrated = false;
+            entries = entries.map(ent => {
+                if (!ent.type) {
+                    ent.type = 'income';
+                    migrated = true;
+                }
+                return ent;
+            });
+            if (migrated) localStorage.setItem('invoices', JSON.stringify(entries));
+
             initChart();
             persistAndRefresh();
         }
@@ -175,7 +188,7 @@
 
         function togglePaid(id) {
             const index = entries.findIndex(i => i.id === id);
-            if(entries[index].type === 'expense') return;
+            if (entries[index].type === 'expense') return;
             entries[index].paid = !entries[index].paid;
             persistAndRefresh();
         }
@@ -198,8 +211,8 @@
         function calculateStats() {
             const now = new Date();
             const elapsedMonths = now.getMonth() + 1;
-            const incomeEntries = entries.filter(e => e.type !== 'expense');
-            const expenseEntries = entries.filter(e => e.type === 'expense');
+            const incomeEntries = entries.filter(e => e && e.type !== 'expense');
+            const expenseEntries = entries.filter(e => e && e.type === 'expense');
 
             const totalInvoiced = incomeEntries.reduce((sum, i) => sum + i.amount, 0);
             const totalPaidAnnual = incomeEntries.filter(i => i.paid).reduce((sum, i) => sum + i.amount, 0);
@@ -268,7 +281,9 @@
 
         function getChartData(type, onlyPaid) {
             const monthlyTotals = new Array(12).fill(0);
-            entries.filter(e => e.type === type).forEach(item => {
+            entries.forEach(item => {
+                const itemType = item.type || 'income'; // Régi adatok kezelése
+                if (itemType !== type) return;
                 if (type === 'income' && onlyPaid && !item.paid) return;
                 const month = new Date(item.date).getMonth();
                 monthlyTotals[month] += item.amount;
@@ -281,6 +296,7 @@
         }
 
         function updateChart() {
+            if (!myChart) return;
             myChart.data.datasets[1].data = getChartData('income', false);
             myChart.data.datasets[2].data = getChartData('income', true);
             myChart.data.datasets[3].data = getChartData('expense', false);
