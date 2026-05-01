@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v5.9</title>
+    <title>Dobi Tracker v6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -19,7 +19,6 @@
         .border-b-thin { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         input, textarea, select { background: #000 !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 0 !important; padding: 10px !important; outline: none; }
         
-        /* NOTHING STYLE TOGGLE - HIGH CONTRAST */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #000; transition: .2s; border: 2px solid #fff; }
@@ -34,7 +33,6 @@
 </head>
 <body class="p-4 md:p-8 max-w-3xl mx-auto">
 
-    <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100]">
         <div class="w-64 text-center">
             <p class="text-[10px] mb-4 opacity-50 uppercase tracking-[0.3em]">System_Access</p>
@@ -43,13 +41,12 @@
         </div>
     </div>
 
-    <!-- MAIN APP -->
     <div id="app" class="hidden">
         <header class="mb-12">
             <div class="flex justify-between items-end border-b-thin pb-6">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v5.9.0 / Patch_Recurrence</p>
+                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v6.0.0 / Clone_Protocol</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase mb-1">Annual Progress</p>
@@ -58,7 +55,6 @@
             </div>
         </header>
 
-        <!-- DASHBOARD -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-12">
             <div>
                 <p class="text-[10px] opacity-30 uppercase mb-4 border-b border-white/10 pb-1 tracking-widest">Annual_Overview</p>
@@ -73,7 +69,6 @@
             </div>
         </section>
 
-        <!-- CHART -->
         <section class="mb-14 h-64 w-full">
             <canvas id="invoiceChart"></canvas>
         </section>
@@ -82,14 +77,12 @@
             <button onclick="openModal()" class="w-full border-2 border-white/20 py-5 text-xs uppercase tracking-[0.5em] font-bold hover:border-white transition">+ Add Entry</button>
         </div>
 
-        <!-- LIST -->
         <section class="space-y-6">
             <p class="text-[10px] opacity-20 uppercase tracking-[0.4em] mb-4">Archive_Logs</p>
             <div id="invoiceList" class="divide-y divide-white/5 border-t border-white/5"></div>
         </section>
     </div>
 
-    <!-- MODAL -->
     <div id="modal" class="hidden fixed inset-0 bg-black/98 flex items-center justify-center p-4 z-50">
         <div class="w-full max-w-sm">
             <h3 class="text-[10px] uppercase tracking-[0.3em] mb-10 text-center opacity-40">Entry_Setup</h3>
@@ -148,31 +141,24 @@
             persistAndRefresh();
         }
 
+        // --- CLONE PROTOCOL LOGIC ---
         function processRecurrence() {
             const now = new Date();
             let changed = false;
 
-            // 1. Megkeressük az összes "minta" tételt (amiket recurring-nak jelöltél)
-            const templates = [];
-            const seen = new Set();
-            entries.filter(e => e.recurring).forEach(m => {
-                const key = `${m.company}-${m.amount}-${m.type}`;
-                if (!seen.has(key)) {
-                    templates.push(m);
-                    seen.add(key);
-                }
-            });
+            // Csak azokat a tételeket vesszük mintának, amik recurring-ok DE nem másolatok (clones)
+            const templates = entries.filter(e => e.recurring && !e.recurringClone);
 
             templates.forEach(t => {
                 const startDate = new Date(t.date);
-                // Elkezdjük nézni a hónapokat az eredeti dátumtól a mai napig
+                // Következő hónap elsejétől indítjuk a figyelést
                 let checkDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
                 while (checkDate <= now) {
                     const month = checkDate.getMonth();
                     const year = checkDate.getFullYear();
 
-                    // Megnézzük, van-e már ilyen tétel ebben a konkrét hónapban/évben
+                    // Megnézzük, van-e már ilyen tétel ebben a hónapban (akár clone, akár nem)
                     const exists = entries.some(e => 
                         e.company === t.company && 
                         e.amount === t.amount &&
@@ -182,22 +168,23 @@
                     );
 
                     if (!exists) {
-                        const newEntry = {
+                        entries.push({
                             ...t,
                             id: Date.now() + Math.random(),
-                            date: new Date(year, month, 1).toISOString().split('T')[0], // A hónap 1. napjára tesszük
-                            paid: t.type === 'expense' ? true : false,
-                            recurring: true
-                        };
-                        entries.push(newEntry);
+                            date: new Date(year, month, 1).toISOString().split('T')[0],
+                            paid: t.type === 'expense',
+                            recurring: true,
+                            recurringClone: true // Jelöljük, hogy ez egy másolat
+                        });
                         changed = true;
                     }
-                    // Lépünk a következő hónapra a ciklusban
                     checkDate.setMonth(checkDate.getMonth() + 1);
                 }
             });
 
-            if (changed) localStorage.setItem('invoices', JSON.stringify(entries));
+            if (changed) {
+                localStorage.setItem('invoices', JSON.stringify(entries));
+            }
         }
 
         function openModal(id = null) {
@@ -234,7 +221,8 @@
                 amount: parseFloat(document.getElementById('amount').value) || 0,
                 date: document.getElementById('date').value,
                 note: document.getElementById('note').value,
-                recurring: document.getElementById('recurring').checked
+                recurring: document.getElementById('recurring').checked,
+                recurringClone: editingId ? (entries.find(e => e.id === editingId).recurringClone || false) : false
             };
 
             if (editingId) {
@@ -243,6 +231,9 @@
             } else {
                 entries.push({ ...data, paid: data.type === 'expense' });
             }
+
+            // Mentés után azonnal futtatjuk az ismétlődést, hogy ha most állítottad be, rögtön generáljon
+            processRecurrence();
             persistAndRefresh();
             closeModal();
         }
@@ -298,7 +289,7 @@
                         <div class="flex gap-4">
                             ${isExp ? '<div class="w-4 text-[8px] mt-1 opacity-20">EXP</div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
                             <div>
-                                <div class="text-xs font-bold uppercase tracking-tight ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.recurring ? '<span class="ml-2 text-[7px] border border-white/20 px-1 opacity-40">AUTO</span>' : ''}</div>
+                                <div class="text-xs font-bold uppercase tracking-tight ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.recurring ? `<span class="ml-2 text-[7px] border border-white/20 px-1 opacity-40">${ent.recurringClone ? 'AUTO' : 'ROOT'}</span>` : ''}</div>
                                 <div class="text-[9px] opacity-30 mt-1">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
                             </div>
                         </div>
