@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v5.8</title>
+    <title>Dobi Tracker v5.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -18,15 +18,14 @@
         body { font-family: 'JetBrains Mono', monospace; background-color: #000; color: #fff; -webkit-font-smoothing: antialiased; }
         .border-b-thin { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         input, textarea, select { background: #000 !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 0 !important; padding: 10px !important; outline: none; }
-        input:focus { border-color: #fff !important; }
         
-        /* NOTHING STYLE TOGGLE - BRUTALIST */
-        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+        /* NOTHING STYLE TOGGLE - HIGH CONTRAST */
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #000; transition: .2s; border: 2px solid #fff; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: #fff; transition: .2s; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #fff; transition: .2s; }
         input:checked + .slider { background-color: #fff; }
-        input:checked + .slider:before { transform: translateX(22px); background-color: #000; }
+        input:checked + .slider:before { transform: translateX(24px); background-color: #000; }
 
         .paid-row { opacity: 0.3; }
         .expense-text { color: #ff4444; }
@@ -35,20 +34,22 @@
 </head>
 <body class="p-4 md:p-8 max-w-3xl mx-auto">
 
+    <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100]">
         <div class="w-64 text-center">
-            <p class="text-[10px] mb-4 opacity-50 uppercase tracking-[0.3em]">System_Auth</p>
+            <p class="text-[10px] mb-4 opacity-50 uppercase tracking-[0.3em]">System_Access</p>
             <input type="password" id="passInput" class="w-full text-center mb-6 text-2xl tracking-widest" placeholder="••••">
-            <button onclick="checkPass()" class="w-full border-2 border-white py-3 text-xs uppercase font-bold tracking-widest hover:bg-white hover:text-black transition">Execute</button>
+            <button onclick="checkPass()" class="w-full border-2 border-white py-3 text-xs uppercase font-bold tracking-widest hover:bg-white hover:text-black transition">Enter_OS</button>
         </div>
     </div>
 
+    <!-- MAIN APP -->
     <div id="app" class="hidden">
         <header class="mb-12">
             <div class="flex justify-between items-end border-b-thin pb-6">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v5.8.0 / Stable_Release</p>
+                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v5.9.0 / Patch_Recurrence</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase mb-1">Annual Progress</p>
@@ -57,20 +58,22 @@
             </div>
         </header>
 
+        <!-- DASHBOARD -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-12">
             <div>
-                <p class="text-[10px] opacity-30 uppercase mb-4 border-b border-white/10 pb-1 tracking-widest">Annual_Data</p>
+                <p class="text-[10px] opacity-30 uppercase mb-4 border-b border-white/10 pb-1 tracking-widest">Annual_Overview</p>
                 <div class="flex justify-between py-1"><span class="text-xs opacity-60">Total Invoiced</span> <span id="totalInvoiced" class="font-bold text-sm">0 Ft</span></div>
                 <div class="flex justify-between py-1 border-t border-white/5 mt-2 pt-1"><span class="text-xs expense-text">Total Expenses</span> <span id="totalExpenses" class="font-bold text-sm expense-text">0 Ft</span></div>
                 <div class="flex justify-between py-1"><span class="text-xs opacity-40">Monthly Avg</span> <span id="monthlyAvg" class="font-bold text-sm opacity-80">0 Ft</span></div>
             </div>
             <div>
-                <p class="text-[10px] opacity-30 uppercase mb-4 border-b border-white/10 pb-1 tracking-widest">Current_Month</p>
+                <p class="text-[10px] opacity-30 uppercase mb-4 border-b border-white/10 pb-1 tracking-widest">Monthly_Data</p>
                 <div class="flex justify-between py-1"><span class="text-xs opacity-60">Issued</span> <span id="monthInvoiced" class="font-bold text-sm">0 Ft</span></div>
                 <div class="flex justify-between py-1 mt-2 pt-1 border-t border-white/5"><span class="text-xs expense-text">Expenses</span> <span id="monthExpenses" class="font-bold text-sm expense-text">0 Ft</span></div>
             </div>
         </section>
 
+        <!-- CHART -->
         <section class="mb-14 h-64 w-full">
             <canvas id="invoiceChart"></canvas>
         </section>
@@ -79,15 +82,17 @@
             <button onclick="openModal()" class="w-full border-2 border-white/20 py-5 text-xs uppercase tracking-[0.5em] font-bold hover:border-white transition">+ Add Entry</button>
         </div>
 
+        <!-- LIST -->
         <section class="space-y-6">
-            <p class="text-[10px] opacity-20 uppercase tracking-[0.4em] mb-4">Database_Logs</p>
+            <p class="text-[10px] opacity-20 uppercase tracking-[0.4em] mb-4">Archive_Logs</p>
             <div id="invoiceList" class="divide-y divide-white/5 border-t border-white/5"></div>
         </section>
     </div>
 
+    <!-- MODAL -->
     <div id="modal" class="hidden fixed inset-0 bg-black/98 flex items-center justify-center p-4 z-50">
         <div class="w-full max-w-sm">
-            <h3 class="text-[10px] uppercase tracking-[0.3em] mb-10 text-center opacity-40">Entry_Configuration</h3>
+            <h3 class="text-[10px] uppercase tracking-[0.3em] mb-10 text-center opacity-40">Entry_Setup</h3>
             <input type="hidden" id="editId">
             <div class="space-y-6">
                 <div class="flex items-center justify-between border border-white/20 p-4">
@@ -108,13 +113,13 @@
                     <input type="number" id="amount" placeholder="AMOUNT HUF" class="w-full text-xs p-4">
                     <input type="date" id="date" class="w-full text-xs p-4 uppercase">
                 </div>
-                <textarea id="note" placeholder="NOTES / SYSTEM_REF" class="w-full h-24 text-xs p-4 resize-none"></textarea>
+                <textarea id="note" placeholder="NOTES / DETAILS" class="w-full h-24 text-xs p-4 resize-none"></textarea>
                 
                 <div class="flex gap-4 pt-6">
                     <button onclick="closeModal()" class="flex-1 py-4 text-[10px] uppercase font-bold opacity-30 hover:opacity-100 transition">Abort</button>
                     <button onclick="saveInvoice()" class="flex-1 bg-white text-black py-4 text-[10px] font-bold uppercase tracking-widest">Commit</button>
                 </div>
-                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-4 text-red-500 text-[9px] hidden uppercase font-bold opacity-40 hover:opacity-100">Delete_Record</button>
+                <button id="deleteBtn" onclick="deleteInvoice()" class="w-full py-4 text-red-500 text-[9px] hidden uppercase font-bold opacity-40 hover:opacity-100 mt-2">Delete_Record</button>
             </div>
         </div>
     </div>
@@ -137,7 +142,6 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             
-            // RECURRING LOGIC START
             processRecurrence();
             
             initChart();
@@ -146,18 +150,12 @@
 
         function processRecurrence() {
             const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            let hasNewCreated = false;
+            let changed = false;
 
-            // 1. Megkeressük az összes mintát (ami recurring: true)
-            // Egyedi rootId-k alapján dolgozunk, hogy ne duplikáljunk
-            const masters = entries.filter(e => e.recurring);
-            
-            // Csoportosítjuk őket név és összeg szerint, hogy a "mintákat" megkapjuk
+            // 1. Megkeressük az összes "minta" tételt (amiket recurring-nak jelöltél)
             const templates = [];
             const seen = new Set();
-            masters.forEach(m => {
+            entries.filter(e => e.recurring).forEach(m => {
                 const key = `${m.company}-${m.amount}-${m.type}`;
                 if (!seen.has(key)) {
                     templates.push(m);
@@ -166,29 +164,40 @@
             });
 
             templates.forEach(t => {
-                // Ellenőrizzük, létezik-e már ebből a mintából bejegyzés az AKTUÁLIS hónapban
-                const alreadyExists = entries.some(e => 
-                    e.company === t.company && 
-                    e.amount === t.amount &&
-                    e.type === t.type &&
-                    new Date(e.date).getMonth() === currentMonth &&
-                    new Date(e.date).getFullYear() === currentYear
-                );
+                const startDate = new Date(t.date);
+                // Elkezdjük nézni a hónapokat az eredeti dátumtól a mai napig
+                let checkDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
-                if (!alreadyExists) {
-                    const newEntry = {
-                        ...t,
-                        id: Date.now() + Math.random(),
-                        date: new Date().toISOString().split('T')[0], // Mai dátum
-                        paid: t.type === 'expense' ? true : false,
-                        recurring: true
-                    };
-                    entries.push(newEntry);
-                    hasNewCreated = true;
+                while (checkDate <= now) {
+                    const month = checkDate.getMonth();
+                    const year = checkDate.getFullYear();
+
+                    // Megnézzük, van-e már ilyen tétel ebben a konkrét hónapban/évben
+                    const exists = entries.some(e => 
+                        e.company === t.company && 
+                        e.amount === t.amount &&
+                        e.type === t.type &&
+                        new Date(e.date).getMonth() === month &&
+                        new Date(e.date).getFullYear() === year
+                    );
+
+                    if (!exists) {
+                        const newEntry = {
+                            ...t,
+                            id: Date.now() + Math.random(),
+                            date: new Date(year, month, 1).toISOString().split('T')[0], // A hónap 1. napjára tesszük
+                            paid: t.type === 'expense' ? true : false,
+                            recurring: true
+                        };
+                        entries.push(newEntry);
+                        changed = true;
+                    }
+                    // Lépünk a következő hónapra a ciklusban
+                    checkDate.setMonth(checkDate.getMonth() + 1);
                 }
             });
 
-            if (hasNewCreated) localStorage.setItem('invoices', JSON.stringify(entries));
+            if (changed) localStorage.setItem('invoices', JSON.stringify(entries));
         }
 
         function openModal(id = null) {
@@ -221,7 +230,7 @@
             const data = {
                 id: editingId || Date.now(),
                 type: document.getElementById('type').value,
-                company: document.getElementById('company').value || 'UNNAMED_ENTITY',
+                company: document.getElementById('company').value || 'SYSTEM_PRTNR',
                 amount: parseFloat(document.getElementById('amount').value) || 0,
                 date: document.getElementById('date').value,
                 note: document.getElementById('note').value,
@@ -246,7 +255,7 @@
         }
 
         function deleteInvoice() {
-            if (confirm('CONFIRM_PERMANENT_DELETION?')) {
+            if (confirm('CONFIRM_ENTRY_DELETE?')) {
                 entries = entries.filter(i => i.id !== editingId);
                 persistAndRefresh();
                 closeModal();
@@ -287,10 +296,10 @@
                     return `
                     <div class="py-6 flex justify-between items-start ${ent.paid ? 'paid-row' : ''}">
                         <div class="flex gap-4">
-                            ${isExp ? '<div class="w-4 text-[8px] mt-1 opacity-20 italic">EXP</div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
+                            ${isExp ? '<div class="w-4 text-[8px] mt-1 opacity-20">EXP</div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
                             <div>
-                                <div class="text-xs font-bold uppercase tracking-tight ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.recurring ? '<span class="ml-2 text-[7px] border border-white/20 px-1 opacity-50">REC</span>' : ''}</div>
-                                <div class="text-[9px] opacity-30 mt-1 uppercase">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
+                                <div class="text-xs font-bold uppercase tracking-tight ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.recurring ? '<span class="ml-2 text-[7px] border border-white/20 px-1 opacity-40">AUTO</span>' : ''}</div>
+                                <div class="text-[9px] opacity-30 mt-1">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
                             </div>
                         </div>
                         <div class="text-right">
