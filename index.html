@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v5.5</title>
+    <title>Dobi Tracker v5.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -22,6 +22,7 @@
         .paid-row { opacity: 0.5; }
         .expense-text { color: #ff4444; }
         .paid-badge { background: #fff; color: #000; padding: 2px 6px; font-size: 10px; font-weight: bold; }
+        .recurring-tag { font-size: 8px; border: 1px solid rgba(255,255,255,0.3); padding: 1px 4px; margin-left: 5px; opacity: 0.6; }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-3xl mx-auto">
@@ -41,7 +42,7 @@
             <div class="flex justify-between items-end border-b-thin pb-4">
                 <div>
                     <h1 class="text-xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase">v5.5.0-stable</p>
+                    <p class="text-[10px] opacity-40 uppercase">v5.6.0-stable</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase">Annual Progress</p>
@@ -90,10 +91,16 @@
             <h3 class="text-xs uppercase tracking-widest mb-8 text-center opacity-50">System_Entry</h3>
             <input type="hidden" id="editId">
             <div class="space-y-4">
-                <select id="type" class="w-full text-xs uppercase">
-                    <option value="income">Income (Bevétel)</option>
-                    <option value="expense">Expense (Kiadás)</option>
-                </select>
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="type" class="w-full text-xs uppercase">
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                    <div class="flex items-center justify-center border border-white/20 gap-2">
+                        <label class="text-[9px] uppercase opacity-50">Recurring</label>
+                        <input type="checkbox" id="recurring" class="w-4 h-4 accent-white">
+                    </div>
+                </div>
                 <input type="text" id="company" placeholder="PARTNER / SERVICE" class="w-full text-xs uppercase">
                 <div class="grid grid-cols-2 gap-2">
                     <input type="number" id="amount" placeholder="AMOUNT HUF" class="w-full text-xs">
@@ -128,20 +135,51 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
 
-            // --- ADAT MIGRÁCIÓ ---
-            // A régi bejegyzéseknek, amiknek még nincs típusa, 'income' típust adunk
-            let migrated = false;
-            entries = entries.map(ent => {
-                if (!ent.type) {
-                    ent.type = 'income';
-                    migrated = true;
-                }
-                return ent;
-            });
-            if (migrated) localStorage.setItem('invoices', JSON.stringify(entries));
-
+            // --- ADAT MIGRÁCIÓ ÉS RECURRING LOGIKA ---
+            handleRecurring();
+            
             initChart();
             persistAndRefresh();
+        }
+
+        function handleRecurring() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            let changed = false;
+
+            // Alap migráció (típusadás)
+            entries = entries.map(ent => {
+                if (!ent.type) { ent.type = 'income'; changed = true; }
+                return ent;
+            });
+
+            // Recurring tételek keresése
+            const recurringMasters = entries.filter(e => e.recurring);
+            
+            recurringMasters.forEach(master => {
+                // Megnézzük, van-e már ilyen nevű és összegű tétel ebben a hónapban
+                const existsThisMonth = entries.some(e => 
+                    e.company === master.company && 
+                    e.amount === master.amount && 
+                    new Date(e.date).getMonth() === currentMonth &&
+                    new Date(e.date).getFullYear() === currentYear
+                );
+
+                if (!existsThisMonth) {
+                    const newEntry = {
+                        ...master,
+                        id: Date.now() + Math.random(),
+                        date: now.toISOString().split('T')[0], // Mai dátummal
+                        paid: master.type === 'expense' ? true : false, // Kiadás alapból fizetve
+                        recurring: true
+                    };
+                    entries.push(newEntry);
+                    changed = true;
+                }
+            });
+
+            if (changed) localStorage.setItem('invoices', JSON.stringify(entries));
         }
 
         function openModal(id = null) {
@@ -155,6 +193,7 @@
                 document.getElementById('amount').value = ent.amount;
                 document.getElementById('date').value = ent.date;
                 document.getElementById('note').value = ent.note || "";
+                document.getElementById('recurring').checked = ent.recurring || false;
                 deleteBtn.classList.remove('hidden');
             } else {
                 document.getElementById('type').value = 'income';
@@ -162,6 +201,7 @@
                 document.getElementById('amount').value = "";
                 document.getElementById('note').value = "";
                 document.getElementById('date').valueAsDate = new Date();
+                document.getElementById('recurring').checked = false;
                 deleteBtn.classList.add('hidden');
             }
         }
@@ -174,7 +214,8 @@
                 company: document.getElementById('company').value || 'UNNAMED',
                 amount: parseFloat(document.getElementById('amount').value) || 0,
                 date: document.getElementById('date').value,
-                note: document.getElementById('note').value
+                note: document.getElementById('note').value,
+                recurring: document.getElementById('recurring').checked
             };
             if (editingId) {
                 const index = entries.findIndex(i => i.id === editingId);
@@ -243,7 +284,7 @@
                         <div class="flex gap-4">
                             ${isExp ? '<div class="w-4"></div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
                             <div>
-                                <div class="text-xs font-bold uppercase ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.paid && !isExp ? '<span class="paid-badge ml-2">PAID</span>' : ''}</div>
+                                <div class="text-xs font-bold uppercase ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.recurring ? '<span class="recurring-tag">R</span>' : ''} ${ent.paid && !isExp ? '<span class="paid-badge ml-2">PAID</span>' : ''}</div>
                                 <div class="text-[9px] opacity-40 mt-1">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
                             </div>
                         </div>
@@ -282,7 +323,7 @@
         function getChartData(type, onlyPaid) {
             const monthlyTotals = new Array(12).fill(0);
             entries.forEach(item => {
-                const itemType = item.type || 'income'; // Régi adatok kezelése
+                const itemType = item.type || 'income';
                 if (itemType !== type) return;
                 if (type === 'income' && onlyPaid && !item.paid) return;
                 const month = new Date(item.date).getMonth();
