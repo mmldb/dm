@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v6.0</title>
+    <title>Dobi Tracker v6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -46,7 +46,7 @@
             <div class="flex justify-between items-end border-b-thin pb-6">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v6.0.0 / Clone_Protocol</p>
+                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v6.1.0 / Graph_Recovery</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase mb-1">Annual Progress</p>
@@ -78,7 +78,7 @@
         </div>
 
         <section class="space-y-6">
-            <p class="text-[10px] opacity-20 uppercase tracking-[0.4em] mb-4">Archive_Logs</p>
+            <p class="text-[10px] opacity-20 uppercase tracking-[0.4em] mb-4">Database_Logs</p>
             <div id="invoiceList" class="divide-y divide-white/5 border-t border-white/5"></div>
         </section>
     </div>
@@ -134,31 +134,23 @@
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
-            
             processRecurrence();
-            
             initChart();
             persistAndRefresh();
         }
 
-        // --- CLONE PROTOCOL LOGIC ---
         function processRecurrence() {
             const now = new Date();
             let changed = false;
-
-            // Csak azokat a tételeket vesszük mintának, amik recurring-ok DE nem másolatok (clones)
             const templates = entries.filter(e => e.recurring && !e.recurringClone);
 
             templates.forEach(t => {
                 const startDate = new Date(t.date);
-                // Következő hónap elsejétől indítjuk a figyelést
                 let checkDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
                 while (checkDate <= now) {
                     const month = checkDate.getMonth();
                     const year = checkDate.getFullYear();
-
-                    // Megnézzük, van-e már ilyen tétel ebben a hónapban (akár clone, akár nem)
                     const exists = entries.some(e => 
                         e.company === t.company && 
                         e.amount === t.amount &&
@@ -174,17 +166,14 @@
                             date: new Date(year, month, 1).toISOString().split('T')[0],
                             paid: t.type === 'expense',
                             recurring: true,
-                            recurringClone: true // Jelöljük, hogy ez egy másolat
+                            recurringClone: true
                         });
                         changed = true;
                     }
                     checkDate.setMonth(checkDate.getMonth() + 1);
                 }
             });
-
-            if (changed) {
-                localStorage.setItem('invoices', JSON.stringify(entries));
-            }
+            if (changed) localStorage.setItem('invoices', JSON.stringify(entries));
         }
 
         function openModal(id = null) {
@@ -224,15 +213,12 @@
                 recurring: document.getElementById('recurring').checked,
                 recurringClone: editingId ? (entries.find(e => e.id === editingId).recurringClone || false) : false
             };
-
             if (editingId) {
                 const index = entries.findIndex(i => i.id === editingId);
                 entries[index] = data;
             } else {
                 entries.push({ ...data, paid: data.type === 'expense' });
             }
-
-            // Mentés után azonnal futtatjuk az ismétlődést, hogy ha most állítottad be, rögtön generáljon
             processRecurrence();
             persistAndRefresh();
             closeModal();
@@ -263,7 +249,7 @@
         function calculateStats() {
             const now = new Date();
             const elapsedMonths = now.getMonth() + 1;
-            const incomes = entries.filter(e => e.type !== 'expense');
+            const incomes = entries.filter(e => (e.type || 'income') !== 'expense');
             const expenses = entries.filter(e => e.type === 'expense');
 
             const tInvoiced = incomes.reduce((sum, i) => sum + i.amount, 0);
@@ -287,10 +273,10 @@
                     return `
                     <div class="py-6 flex justify-between items-start ${ent.paid ? 'paid-row' : ''}">
                         <div class="flex gap-4">
-                            ${isExp ? '<div class="w-4 text-[8px] mt-1 opacity-20">EXP</div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
+                            ${isExp ? '<div class="w-4 text-[8px] mt-1 opacity-20 italic font-bold">EXP</div>' : `<input type="checkbox" ${ent.paid ? 'checked' : ''} onchange="togglePaid(${ent.id})" class="mt-1 w-4 h-4 accent-white">`}
                             <div>
                                 <div class="text-xs font-bold uppercase tracking-tight ${isExp ? 'expense-text' : ''}">${ent.company} ${ent.recurring ? `<span class="ml-2 text-[7px] border border-white/20 px-1 opacity-40">${ent.recurringClone ? 'AUTO' : 'ROOT'}</span>` : ''}</div>
-                                <div class="text-[9px] opacity-30 mt-1">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
+                                <div class="text-[9px] opacity-30 mt-1 uppercase">${ent.date} ${ent.note ? ' // ' + ent.note : ''}</div>
                             </div>
                         </div>
                         <div class="text-right">
@@ -309,8 +295,9 @@
                     labels: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
                     datasets: [
                         { label: 'TARGET', data: Array.from({length: 12}, (_, i) => (i + 1) * targetMonthly), borderColor: 'rgba(255,255,255,0.05)', borderDash: [2, 2], pointRadius: 0, borderWidth: 1 },
-                        { label: 'ISSUED', data: getChartData('income'), borderColor: '#fff', tension: 0.1, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#fff' },
-                        { label: 'EXPENSES', data: getChartData('expense'), borderColor: '#ff4444', tension: 0.1, borderWidth: 1.5, pointRadius: 0 }
+                        { label: 'ISSUED', data: getChartData('income', false), borderColor: '#fff', tension: 0.1, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#fff' },
+                        { label: 'PAID', data: getChartData('income', true), borderColor: 'rgba(255,255,255,0.4)', fill: true, backgroundColor: 'rgba(255,255,255,0.05)', tension: 0.1, borderWidth: 1, pointRadius: 0 },
+                        { label: 'EXPENSES', data: getChartData('expense', false), borderColor: '#ff4444', tension: 0.1, borderWidth: 1.5, pointRadius: 0 }
                     ]
                 },
                 options: {
@@ -324,24 +311,31 @@
             });
         }
 
-        function getChartData(type) {
+        function getChartData(type, onlyPaid = false) {
             const monthlyTotals = new Array(12).fill(0);
             entries.forEach(item => {
-                if ((item.type || 'income') !== type) return;
+                const itemType = item.type || 'income';
+                if (itemType !== type) return;
+                if (type === 'income' && onlyPaid && !item.paid) return;
                 const month = new Date(item.date).getMonth();
-                monthlyTotals[month] += item.amount;
+                if (month >= 0 && month < 12) {
+                    monthlyTotals[month] += item.amount;
+                }
             });
             let runningTotal = 0;
+            const now = new Date();
+            const currentMonth = now.getMonth();
             return monthlyTotals.map((sum, index) => {
                 runningTotal += sum;
-                return (index <= new Date().getMonth() || sum > 0) ? runningTotal : null;
+                return (index <= currentMonth || sum > 0) ? runningTotal : null;
             });
         }
 
         function updateChart() {
             if (!myChart) return;
-            myChart.data.datasets[1].data = getChartData('income');
-            myChart.data.datasets[2].data = getChartData('expense');
+            myChart.data.datasets[1].data = getChartData('income', false);
+            myChart.data.datasets[2].data = getChartData('income', true);
+            myChart.data.datasets[3].data = getChartData('expense', false);
             myChart.update();
         }
     </script>
