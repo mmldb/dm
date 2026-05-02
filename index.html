@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dobi Tracker v6.2</title>
+    <title>Dobi Tracker v6.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -44,7 +44,7 @@
             <div class="flex justify-between items-end border-b-thin pb-6">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tighter uppercase">Dobi_Money</h1>
-                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v6.2.0 / First_Day_Patch</p>
+                    <p class="text-[10px] opacity-40 uppercase tracking-widest">v6.3.0 / Timezone_Shield</p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] opacity-40 uppercase mb-1">Annual Progress</p>
@@ -121,6 +121,13 @@
         let entries = JSON.parse(localStorage.getItem('invoices')) || [];
         let editingId = null;
 
+        // BIZTONSÁGOS FORMÁZÓ - Időzóna eltolódás ellen
+        function formatDateSafe(year, month, day) {
+            const m = String(month + 1).padStart(2, '0');
+            const d = String(day).padStart(2, '0');
+            return `${year}-${m}-${d}`;
+        }
+
         function checkPass() {
             if (document.getElementById('passInput').value === 'dobimoney') {
                 localStorage.setItem('auth', 'true');
@@ -144,7 +151,7 @@
 
             templates.forEach(t => {
                 const startDate = new Date(t.date);
-                // Mindig a hónap 1-jére kényszerítjük a kezdést
+                // A következő hónap 1-jétől indítjuk
                 let checkDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
                 while (checkDate <= now) {
@@ -163,7 +170,7 @@
                         entries.push({
                             ...t,
                             id: Date.now() + Math.random(),
-                            date: new Date(year, month, 1).toISOString().split('T')[0],
+                            date: formatDateSafe(year, month, 1),
                             paid: t.type === 'expense',
                             recurring: true,
                             recurringClone: true
@@ -206,10 +213,12 @@
             let inputDate = document.getElementById('date').value;
             const isRecurring = document.getElementById('recurring').checked;
             
-            // Ha ismétlődő, kényszerítjük a hónap első napját
             if (isRecurring) {
-                const d = new Date(inputDate);
-                inputDate = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+                // Kényszerített 1-je, de biztonságos formában
+                const parts = inputDate.split('-');
+                if(parts.length === 3) {
+                    inputDate = `${parts[0]}-${parts[1]}-01`;
+                }
             }
 
             const data = {
@@ -264,8 +273,15 @@
 
             const tInvoiced = incomes.reduce((sum, i) => sum + i.amount, 0);
             const tExpenses = expenses.reduce((sum, i) => sum + i.amount, 0);
-            const mInvoiced = incomes.filter(e => new Date(e.date).getMonth() === now.getMonth() && new Date(e.date).getFullYear() === now.getFullYear()).reduce((s,i)=>s+i.amount,0);
-            const mExpenses = expenses.filter(e => new Date(e.date).getMonth() === now.getMonth() && new Date(e.date).getFullYear() === now.getFullYear()).reduce((s,i)=>s+i.amount,0);
+            const mInvoiced = incomes.filter(e => {
+                const d = new Date(e.date);
+                return d.getUTCMonth() === now.getUTCMonth() || d.getMonth() === now.getMonth();
+            }).reduce((s,i)=>s+i.amount,0);
+            
+            const mExpenses = expenses.filter(e => {
+                const d = new Date(e.date);
+                return d.getMonth() === now.getMonth();
+            }).reduce((s,i)=>s+i.amount,0);
 
             document.getElementById('totalInvoiced').innerText = tInvoiced.toLocaleString() + ' Ft';
             document.getElementById('totalExpenses').innerText = tExpenses.toLocaleString() + ' Ft';
@@ -327,7 +343,11 @@
                 const itemType = item.type || 'income';
                 if (itemType !== type) return;
                 if (type === 'income' && onlyPaid && !item.paid) return;
-                const month = new Date(item.date).getMonth();
+                
+                // Időzóna-mentes hónap lekérés
+                const parts = item.date.split('-');
+                const month = parseInt(parts[1]) - 1;
+                
                 if (month >= 0 && month < 12) {
                     monthlyTotals[month] += item.amount;
                 }
